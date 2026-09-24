@@ -65,10 +65,12 @@ from __future__ import annotations
 
 import json
 import logging
+import random
 import threading
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.multiprocessing as mp
 
@@ -178,16 +180,23 @@ class FedServer:
 
     def __init__(self, cfg: FedYoloConfig):
         self.cfg = cfg
-        self.model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained)
+        self.model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes)
         self.global_state_dict = {k: v.clone() for k, v in self.model.state_dict().items()}
         self.out_dir = Path(cfg.output_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
         self._map_history: list[dict] = []
+        # None disables the diagnostic entirely (no extra work in aggregate()).
+        self._merge_diag: list | None = [] if cfg.federation.merge_diagnostics else None
         # Per-node SGD momentum buffers, carried forward round-to-round instead
         # of restarting cold every round (see run_node_round's optimizer_state
         # param). Model WEIGHTS still come from the freshly-aggregated global
         # state each round -- only the gradient-momentum statistics persist.
         self._node_optimizer_state: dict[str, dict] = {}
+        # See client.py's run_node_round for why random/np.random are seeded
+        # here too, not just torch -- ultralytics' augmentation pipeline
+        # reads from those, not torch's RNG.
+        random.seed(cfg.seed)
+        np.random.seed(cfg.seed % (2**32))
         torch.manual_seed(cfg.seed)
 
     def run(self) -> dict:
@@ -223,7 +232,21 @@ class FedServer:
                     node_class_counts=[r.class_counts for r in results],
                     model=self.model,
                     nc=self.cfg.nc,
+                    # previous_round_sd is this round's pre-aggregation global,
+                    # i.e. exactly the snapshot every node started from -- the
+                    # baseline the merge rules form their deltas against.
+                    prev_global=previous_round_sd,
+                    rule=self.cfg.federation.merge_rule,
+                    trim=self.cfg.federation.merge_trim,
+                    diag_out=self._merge_diag,
+                    node_steps=([r.num_steps for r in results]
+                                if self.cfg.federation.normalize_steps else None),
+                    weight_basis=self.cfg.federation.weight_basis,
+                    node_instance_totals=[sum(r.class_counts.values()) for r in results],
                 )
+                if self._merge_diag is not None:
+                    (self.out_dir / "merge_diagnostics.json").write_text(
+                        json.dumps(self._merge_diag, indent=2))
 
                 ckpt_path = self.out_dir / f"global_round{round_idx + 1:03d}.pt"
                 torch.save(
@@ -231,7 +254,22 @@ class FedServer:
                      "global_classes": self.cfg.global_classes},
                     ckpt_path,
                 )
-                
+                # Keep only the last `keep_checkpoints` rounds on disk -- every
+                # one of these is a full model (up to ~350MB for yolo26x).
+                # Saving all of them for a 10-round run cost a real "No space
+                # left on device" crash on this machine once model sizes grew
+                # past yolov8s. Keeping more than one exists so a finished run
+                # can be re-scored on a *different* eval set at several
+                # late rounds rather than only its last: this config's
+                # round-to-round mAP swings by up to 0.10 on the small
+                # balanced-fraction eval set, so a single final-round number
+                # is a noisy way to compare two runs. Delete only AFTER the
+                # new one is safely written, so a mid-save crash never leaves
+                # zero checkpoints on disk.
+                stale = round_idx + 1 - self.cfg.federation.keep_checkpoints
+                if stale > 0:
+                    (self.out_dir / f"global_round{stale:03d}.pt").unlink(missing_ok=True)
+
                 # ── live mAP evaluation ──────────────────────────────────────
                 is_last = (round_idx + 1 == self.cfg.federation.rounds)
                 due     = ((round_idx + 1) % self.cfg.federation.eval_interval == 0)
@@ -241,6 +279,12 @@ class FedServer:
                     result = _run_eval(self.cfg, self.global_state_dict, label)
                     if result:
                         self._map_history.append(result)
+                        # Persisted so a later comparison can average the last
+                        # few rounds instead of trusting a single final number;
+                        # previously this history only ever reached the
+                        # terminal, and was lost once the run ended.
+                        (self.out_dir / "map_history.json").write_text(
+                            json.dumps(self._map_history, indent=2))
                         _print_map_table(self._map_history, self.cfg.global_classes)
 
         final_path = self.out_dir / "global_final.pt"
@@ -277,12 +321,13 @@ class AsyncFedServer:
         cycle loop early once the target is reached or progress has plateaued,
         without changing behavior for the standard fixed-cycle-count run()."""
         self.cfg = cfg
-        self.model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained)
+        self.model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes)
 
         # Shared global state — protected by _lock for all reads/writes
         self._global_sd: dict = {k: v.clone() for k, v in self.model.state_dict().items()}
         self._version: int = 0          # increments after every push
         self._submission_count: int = 0
+        self._last_ckpt_path: Path | None = None   # for pruning, see push()
 
         self._lock = threading.Lock()   # guards _global_sd, _version, _submission_count
 
@@ -316,6 +361,8 @@ class AsyncFedServer:
         # Increase only if you have enough RAM for N concurrent models.
         self._train_semaphore = threading.Semaphore(cfg.federation.max_concurrent_nodes)
 
+        random.seed(cfg.seed)
+        np.random.seed(cfg.seed % (2**32))
         torch.manual_seed(cfg.seed)
 
     # ── public interface used by node threads ──────────────────────────────
@@ -343,7 +390,15 @@ class AsyncFedServer:
                 f"owns={owned_names} | global_v={self._version}"
             )
 
-            # Per-submission checkpoint — records full trajectory
+            # Per-submission checkpoint. Only the latest is kept on disk --
+            # async saves one of these per submission (4 nodes x
+            # async_node_cycles, e.g. 40 for the 20-epoch/node generation),
+            # and at up to ~350MB each (yolo26x) that's easily 10GB+ for one
+            # run if every version is retained. Nothing downstream reads any
+            # version but the latest, and keeping all of them caused a real
+            # "No space left on device" crash on this machine. Delete the
+            # PREVIOUS checkpoint only after the new one is safely written,
+            # so a mid-save crash never leaves zero checkpoints on disk.
             ckpt_path = self.out_dir / f"global_v{self._version:04d}_{result.name}.pt"
             torch.save(
                 {
@@ -356,6 +411,9 @@ class AsyncFedServer:
                 },
                 ckpt_path,
             )
+            if self._last_ckpt_path is not None:
+                self._last_ckpt_path.unlink(missing_ok=True)
+            self._last_ckpt_path = ckpt_path
 
             if self._progress is not None:
                 self._progress.advance(self._progress_task)

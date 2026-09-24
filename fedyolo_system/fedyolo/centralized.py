@@ -21,7 +21,9 @@ with the partial-label cost, i.e. the absolute ceiling.
 from __future__ import annotations
 
 import logging
+import random
 
+import numpy as np
 import torch
 
 from .client import _class_mask
@@ -36,9 +38,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 
 def train_centralized_baseline(cfg: FedYoloConfig) -> dict:
     device = torch.device(cfg.federation.device)
+    # See client.py's run_node_round for why random/np.random are seeded
+    # here too, not just torch.
+    random.seed(cfg.seed)
+    np.random.seed(cfg.seed % (2**32))
     torch.manual_seed(cfg.seed)
 
-    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained).to(device)
+    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes).to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=cfg.federation.lr0, momentum=0.9, weight_decay=5e-4)
 
     node_loaders = [
@@ -52,12 +58,47 @@ def train_centralized_baseline(cfg: FedYoloConfig) -> dict:
     else:
         total_epochs = cfg.federation.rounds * cfg.federation.local_epochs
         
+    end2end = getattr(model, "end2end", False)
+
     step = 0
     for epoch in range(total_epochs):
         log.info(f"=== centralized epoch {epoch + 1}/{total_epochs} ===")
         for node, owned_ids, loader in node_loaders:
             model.class_weights = _class_mask(cfg.nc, owned_ids, device)
-            model.criterion = None  # force rebuild so it picks up the new mask
+            # Force rebuild so the new mask is picked up. `= None` is not
+            # enough for YOLOEModel: its own loss() checks `hasattr(self,
+            # "criterion")`, which is already True once the attribute
+            # exists at all (even set to None) -- it would skip rebuilding
+            # and then crash calling `None(preds, batch)`. Deleting the
+            # attribute makes `hasattr` False again, which both
+            # BaseModel.loss()'s `getattr(..., None) is None` check and
+            # YOLOEModel.loss()'s `hasattr` check agree means "rebuild".
+            if hasattr(model, "criterion"):
+                del model.criterion
+            if end2end:
+                # E2ELoss ramps one2many/one2one loss weighting from
+                # o2m=0.8 at construction to o2m=0.1 by the end of
+                # training, but only across the epochs its OWN instance
+                # lives through -- and this loop forces a fresh instance
+                # every single node switch (`del model.criterion` above),
+                # every epoch, so a lazily-rebuilt E2ELoss would never
+                # accumulate any decay progress at all: same permanent
+                # 80/20 split bug as client.py's federated path (see the
+                # comment there), just reset even more often here. Fix:
+                # build the criterion ourselves instead of leaving it to
+                # BaseModel.loss()'s lazy `init_criterion()`, scope its
+                # decay to this run's real total_epochs (not the
+                # node-visit count), and fast-forward `.updates` to where
+                # this epoch actually sits in that schedule so decay
+                # progress survives the rebuild instead of restarting from
+                # o2m=0.8 every node switch.
+                from ultralytics.utils.loss import E2ELoss
+                crit = E2ELoss(model)
+                crit.one2many.hyp.epochs = crit.one2one.hyp.epochs = total_epochs
+                crit.updates = epoch
+                crit.o2m = crit.decay(crit.updates)
+                crit.o2o = max(crit.total - crit.o2m, 0)
+                model.criterion = crit
             model.train()
             for batch in loader:
                 set_warmup_lr(optimizer, step, cfg.federation.warmup_steps, cfg.federation.lr0)

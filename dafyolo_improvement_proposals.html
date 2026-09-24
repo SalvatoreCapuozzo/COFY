@@ -1,0 +1,651 @@
+<title>DAFYOLO Improvement Proposals</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --bg-page:      #f4f5f8;
+    --surface:      #ffffff;
+    --surface-2:    #eceef3;
+    --ink:          #12141c;
+    --ink-2:        #454b5a;
+    --muted:        #838ba0;
+    --border:       rgba(18,20,28,0.11);
+    --border-soft:  rgba(18,20,28,0.06);
+    --accent:       #2a5bd6;
+    --accent-ink:   #17399e;
+    --accent-soft:  #e7edfc;
+    --accent-soft-b:#c9d7f8;
+    --code-bg:      #14161d;
+    --code-ink:     #e4e7ef;
+    --good:      #0ca30c; --good-soft: #e4f6e2; --good-bd: #b7e3ac;
+    --warn:      #b4790a; --warn-soft: #fdf1da; --warn-bd: #f0d59a;
+    --bad:       #c4382f; --bad-soft:  #fbe6e3; --bad-bd:  #f0b8b0;
+    --fix:       #6d3fc9; --fix-soft:  #f0e9fc; --fix-bd:  #d4c1f2;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg-page:#0c0d11; --surface:#15171e; --surface-2:#1b1e27;
+      --ink:#eef0f6; --ink-2:#c2c7d6; --muted:#8891a3;
+      --border:rgba(255,255,255,0.12); --border-soft:rgba(255,255,255,0.07);
+      --accent:#6f97ea; --accent-ink:#a9c0f2; --accent-soft:#1c2745; --accent-soft-b:#2c3c66;
+      --code-bg:#0a0b0f; --code-ink:#dfe3ee;
+      --good:#35c55b; --good-soft:#123320; --good-bd:#1f5c37;
+      --warn:#f0ab2e; --warn-soft:#3a2c0d; --warn-bd:#6b5019;
+      --bad:#f0685c; --bad-soft:#3a1712; --bad-bd:#6e2a22;
+      --fix:#b494ec; --fix-soft:#241a3d; --fix-bd:#46356f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg-page:#0c0d11; --surface:#15171e; --surface-2:#1b1e27;
+    --ink:#eef0f6; --ink-2:#c2c7d6; --muted:#8891a3;
+    --border:rgba(255,255,255,0.12); --border-soft:rgba(255,255,255,0.07);
+    --accent:#6f97ea; --accent-ink:#a9c0f2; --accent-soft:#1c2745; --accent-soft-b:#2c3c66;
+    --code-bg:#0a0b0f; --code-ink:#dfe3ee;
+    --good:#35c55b; --good-soft:#123320; --good-bd:#1f5c37;
+    --warn:#f0ab2e; --warn-soft:#3a2c0d; --warn-bd:#6b5019;
+    --bad:#f0685c; --bad-soft:#3a1712; --bad-bd:#6e2a22;
+    --fix:#b494ec; --fix-soft:#241a3d; --fix-bd:#46356f;
+    color-scheme: dark;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg-page); color:var(--ink);
+    font-family:"Source Serif 4",Georgia,serif; font-size:16.5px; line-height:1.6; }
+  h1,h2,h3{ font-family:"Archivo","Arial Narrow",sans-serif; color:var(--ink); text-wrap:balance; letter-spacing:-0.01em; }
+  .mono, code, table, .stat-val, .badge, th{ font-family:"IBM Plex Mono",ui-monospace,monospace; }
+  a{ color:var(--accent-ink); }
+  .wrap{ max-width:1080px; margin:0 auto; padding:0 28px 100px; }
+
+  header.top{ border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--surface-2),var(--bg-page) 140%); }
+  header.top .wrap{ padding-top:48px; padding-bottom:32px; }
+  .eyebrow{ font-family:"IBM Plex Mono",monospace; font-size:12.5px; letter-spacing:.11em; text-transform:uppercase;
+    color:var(--accent-ink); display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .eyebrow::before{ content:""; width:22px; height:1px; background:var(--accent); }
+  h1.title{ font-size:clamp(1.9rem,3vw,2.6rem); font-weight:800; margin:0 0 10px; line-height:1.05; }
+  .dek{ max-width:700px; font-size:1.08rem; color:var(--ink-2); margin:0 0 20px; }
+  .meta-row{ display:flex; flex-wrap:wrap; gap:8px 20px; font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); }
+  .meta-row b{ color:var(--ink-2); font-weight:600; }
+
+  main{ padding-top:40px; display:flex; flex-direction:column; gap:44px; }
+  .sec-head{ display:flex; align-items:baseline; gap:14px; border-bottom:2px solid var(--ink); padding-bottom:8px; margin-bottom:18px; }
+  h2.sec-title{ font-size:1.3rem; margin:0; font-weight:800; }
+  h3{ font-size:1.02rem; font-weight:700; margin:22px 0 8px; }
+  p{ margin:0 0 12px; color:var(--ink-2); }
+
+  .badge{ display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:600;
+    padding:3px 9px 3px 8px; border-radius:5px; border:1px solid; white-space:nowrap; }
+  .badge.good{ background:var(--good-soft); color:var(--good); border-color:var(--good-bd); }
+  .badge.warn{ background:var(--warn-soft); color:var(--warn); border-color:var(--warn-bd); }
+  .badge.bad{ background:var(--bad-soft); color:var(--bad); border-color:var(--bad-bd); }
+  .badge.fix{ background:var(--fix-soft); color:var(--fix); border-color:var(--fix-bd); }
+
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:20px 22px; }
+  .twocol{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:820px){ .twocol{ grid-template-columns:1fr; } }
+
+  .tbl-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; }
+  table{ border-collapse:collapse; width:100%; min-width:520px; font-size:13px; background:var(--surface); }
+  th,td{ padding:8px 12px; text-align:left; border-bottom:1px solid var(--border-soft); white-space:nowrap; }
+  thead th{ background:var(--surface-2); color:var(--ink-2); font-size:10.5px; letter-spacing:.05em;
+    text-transform:uppercase; font-weight:600; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:var(--accent-soft); }
+  td.num,th.num{ text-align:right; font-variant-numeric:tabular-nums; font-family:"IBM Plex Mono",monospace; }
+  td.wrap-cell{ white-space:normal; min-width:200px; }
+  .row-best td:first-child{ box-shadow:inset 3px 0 0 var(--good); }
+
+  pre{ background:var(--code-bg); color:var(--code-ink); padding:14px 16px; border-radius:8px; overflow-x:auto;
+    font-family:"IBM Plex Mono",monospace; font-size:12.5px; line-height:1.5; border:1px solid var(--border-soft); }
+  code.inline{ background:var(--surface-2); color:var(--ink); padding:1px 6px; border-radius:4px; font-size:0.86em; border:1px solid var(--border-soft); }
+
+  ul.plain{ padding-left:20px; color:var(--ink-2); }
+  ul.plain li{ margin-bottom:7px; }
+
+  .tech-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin-bottom:14px; }
+  .tech-head{ display:flex; align-items:baseline; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:8px; }
+  .tech-num{ font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted); letter-spacing:.04em; }
+  .tech-title{ font-family:"Archivo",sans-serif; font-weight:700; font-size:15.5px; color:var(--ink); margin:2px 0 0; }
+  .tech-badges{ display:flex; gap:6px; flex-wrap:wrap; }
+  .tech-card p{ font-size:14px; margin-bottom:8px; }
+  .tech-card p:last-child{ margin-bottom:0; }
+  .tech-meta{ font-size:11.5px; color:var(--muted); font-family:"IBM Plex Mono",monospace; margin-top:8px; }
+
+  .stat-grid-sm{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; margin:14px 0; }
+  .stat-grid-sm .box{ background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+  .stat-grid-sm .box .k{ font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-family:"IBM Plex Mono",monospace; margin-bottom:5px; }
+  .stat-grid-sm .box .v{ font-family:"IBM Plex Mono",monospace; font-size:17px; font-weight:600; }
+  .stat-grid-sm .box .v .sd{ font-size:12px; color:var(--muted); font-weight:400; }
+
+  figure{ margin:0; }
+  figure svg{ width:100%; height:auto; color:var(--ink-2); }
+  figcaption{ font-size:12.5px; color:var(--muted); margin-top:10px; }
+
+  footer{ border-top:1px solid var(--border); margin-top:60px; padding-top:22px; font-size:12px; color:var(--muted);
+    font-family:"IBM Plex Mono",monospace; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">Design proposal · nothing below is built yet</div>
+    <h1 class="title">Merging YOLO models that share no classes at all</h1>
+    <p class="dek">WBC's federated result trails its own full-annotation
+    oracle by far more than kfm12's does (52–58% vs. 72–83% Fed:Oracle).
+    Three constraints are fixed and not up for negotiation: nodes stay
+    mutually independent, the server never holds a labeled image, and
+    class ownership stays extreme non-IID — one class, one node. Inside
+    those walls the real question is narrow and concrete: <b>how do you
+    merge four detectors that were each trained to find entirely
+    different objects, without averaging away what each one learned?</b>
+    Everything below is additive — sync and async both stay exactly as
+    they are.</p>
+    <div class="meta-row">
+      <span><b>Grounded in</b> direct code inspection and real checkpoints, cited throughout</span>
+      <span><b>Applied items</b> are removed from this page as they are tried; their measured results live in the current state report</span>
+      <span><b>Companion doc</b> <a href="https://claude.ai/code/artifact/caa25a33-1b24-4b0e-be7d-6fcde03d54a4" target="_blank" rel="noopener">current state report</a></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<main>
+
+  <section id="constraints">
+    <div class="sec-head"><span class="mono" style="color:var(--accent-ink);font-size:13px;">→</span><h2 class="sec-title">The three walls, and what they rule out</h2></div>
+    <div class="twocol" style="margin-bottom:14px;">
+      <div class="card" style="padding:16px 18px;">
+        <div style="font-weight:700;color:var(--ink);margin-bottom:4px;">1 · Nodes are mutually independent</div>
+        <p style="margin:0;font-size:13.5px;">A node learns that another
+        class exists only by downloading the server's model. Verified:
+        <code class="inline">fedyolo/net/</code>'s dynamic rooms already
+        work this way (<code class="inline">rooms.py:219-267</code> — a
+        class <i>ceiling</i>, placeholder names, and
+        <code class="inline">join()</code> returns a node only its own
+        classes). Today's <code class="inline">simulate.py</code> static
+        configs do not — one YAML carries the full class list to every
+        node before round 1. Treated here as a rule for new work, not a
+        retroactive fix to the reported pipeline.</p>
+      </div>
+      <div class="card" style="padding:16px 18px;">
+        <div style="font-weight:700;color:var(--ink);margin-bottom:4px;">2 · The server holds no labeled images</div>
+        <p style="margin:0;font-size:13.5px;">It receives weights and
+        nothing else. No server-side evaluation set, no calibration
+        slice, no fine-tuning pass of its own.</p>
+        <div style="font-weight:700;color:var(--ink);margin:14px 0 4px;">3 · Ownership stays extreme non-IID</div>
+        <p style="margin:0;font-size:13.5px;">One class, exactly one
+        node, disjoint. Confirmed in both datasets — WBC's 1+1+2+3 = 7
+        and kfm12's 3+4+3+2 = 12. Not a parameter to tune; the condition
+        being studied.</p>
+      </div>
+    </div>
+    <p style="margin:0;font-size:13px;color:var(--muted);">Three earlier
+    draft items are gone rather than reworked, each failing one wall:
+    exchanging object crops between nodes (wall 1), a small server-side
+    full-class calibration set fine-tuned between rounds (wall 2), and
+    replicating each class across two nodes to give the per-class
+    averaging path something real to average (wall 3).</p>
+  </section>
+
+    <section id="anatomy">
+    <div class="sec-head"><span class="mono" style="color:var(--accent-ink);font-size:13px;">→</span><h2 class="sec-title">The merge problem, measured</h2></div>
+    <p>Two facts about what merging currently does, both taken from a real
+    WBC <code class="inline">yolo26-classic@l640</code> checkpoint and the
+    aggregation code itself.</p>
+    <p><b>First — the per-class split protects almost nothing.</b> The
+    architecture's centerpiece is separating per-class parameters from
+    shared ones, so that a node never overwrites a class it knows nothing
+    about. In practice that protected set is
+    <code class="inline">cv3.{i}.2</code>'s weight and bias: <b>5,397
+    parameters out of 24,845,185</b>. Everything else — 99.98% of the
+    model — is coordinate-averaged across four nodes that share no
+    classes whatsoever.</p>
+    <div class="card" style="margin:14px 0;">
+      <figure>
+        <svg viewBox="0 0 900 190" role="img" aria-label="A horizontal bar of the model's 24.8 million parameters: the backbone and neck are 94.3 percent, the box-regression branch 3.4 percent, the classification mixing convolutions 2.2 percent, and the per-class split protects 5,397 parameters, or 0.02 percent — too small to be visible at this scale.">
+          <rect x="40" y="46" width="773" height="44" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.3"/>
+          <rect x="813" y="46" width="28" height="44" fill="var(--surface-2)" stroke="currentColor" stroke-width="1.3"/>
+          <rect x="841" y="46" width="18" height="44" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1.3"/>
+          <rect x="859" y="46" width="3" height="44" fill="var(--fix)" stroke="var(--fix)" stroke-width="1"/>
+
+          <text x="426" y="72" text-anchor="middle" font-size="12.5" fill="var(--ink)" font-family="'IBM Plex Mono',monospace">backbone + neck — 94.31%</text>
+
+          <line x1="860" y1="90" x2="860" y2="112" stroke="var(--fix)" stroke-width="1.3"/>
+          <line x1="860" y1="112" x2="640" y2="112" stroke="var(--fix)" stroke-width="1.3"/>
+          <text x="634" y="116" text-anchor="end" font-size="12" fill="var(--fix)" font-family="'IBM Plex Mono',monospace">per-class split protects 5,397 params — 0.02%</text>
+
+          <line x1="850" y1="46" x2="850" y2="28" stroke="var(--warn)" stroke-width="1.3"/>
+          <line x1="850" y1="28" x2="700" y2="28" stroke="var(--warn)" stroke-width="1.3"/>
+          <text x="694" y="32" text-anchor="end" font-size="12" fill="var(--warn)" font-family="'IBM Plex Mono',monospace">cv3 mixing convs — 2.24% (557,068)</text>
+
+          <line x1="827" y1="90" x2="827" y2="140" stroke="currentColor" stroke-width="1.3" opacity="0.6"/>
+          <line x1="827" y1="140" x2="700" y2="140" stroke="currentColor" stroke-width="1.3" opacity="0.6"/>
+          <text x="694" y="144" text-anchor="end" font-size="12" fill="var(--muted)" font-family="'IBM Plex Mono',monospace">cv2 box branch — 3.42% (850,194)</text>
+
+          <text x="40" y="176" font-size="11.5" fill="var(--muted)" font-family="'IBM Plex Mono',monospace">24,845,185 parameters total · everything but the purple sliver is averaged across nodes sharing no classes</text>
+        </svg>
+        <figcaption>Where a node's parameters go when the server merges.
+        The per-class sliver is drawn at minimum visible width — at true
+        scale it would be under a fifth of a pixel wide.</figcaption>
+      </figure>
+    </div>
+    <p><b>Second — under single ownership, even that sliver is never
+    actually averaged.</b> <code class="inline">aggregate_per_class</code>
+    (<code class="inline">model.py:368-386</code>) builds
+    <code class="inline">contributors = [i for i, owned in enumerate(...)
+    if c in owned]</code> and takes an instance-weighted mean over them.
+    With exactly one contributor that weight is 1.0, so the output is
+    that node's own row unchanged — an identity operation, in every
+    experiment this project has run. The per-class machinery's real job
+    has been <i>isolation</i>, never averaging. Which also means
+    head-personalization methods (FedPer and relatives) have nothing to
+    offer here: the head is already maximally personalized by
+    construction.</p>
+    <p style="margin:0;">Put together: <b>the entire federation reduces
+    to merging one shared trunk across four models that were optimized
+    for disjoint objectives.</b> That is the whole problem, and it is
+    where every technique below is aimed. Of the shared parameters, the
+    557,068 in <code class="inline">cv3.{i}.0</code> and
+    <code class="inline">cv3.{i}.1</code> were the prime suspect, sitting
+    immediately before the per-class layer. <b>Measured, they are not the
+    problem:</b> at the first aggregation they retain 0.721 of their update
+    at a cross-node cosine of 0.651, while the backbone retains only 0.585
+    at a cosine of 0.103. The disagreement is in the trunk.</p>
+  </section>
+
+  <section id="track-m">
+    <div class="sec-head"><span class="mono" style="color:var(--accent-ink);font-size:13px;">→</span><h2 class="sec-title">Track M — better merge rules</h2></div>
+    <p>Server-side changes to <i>how</i> node weights combine. All of them
+    see only weights, none needs a node to know anything new, and none
+    touches class ownership.</p>
+
+        <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">M2</div><div class="tech-title">Merge the classification branch more slowly than the trunk</div></div>
+        <div class="tech-badges"><span class="badge good">low cost</span><span class="badge good">server-side only</span><span class="badge fix">follows directly from the measurement above</span></div>
+      </div>
+      <p style="font-size:12.5px;color:var(--bad);margin-bottom:10px;"><b>Premise
+      refuted by measurement.</b> The merge diagnostic found these convs among
+      the <i>best</i>-aligned parameters across nodes (retained 0.721, cosine
+      0.651), and the backbone the worst (0.585, 0.103). As written, this is
+      aimed at the wrong layer; the damped-merge idea only survives if
+      re-aimed at the trunk.</p>
+      <p>Backbone and neck learn generic low- and mid-level visual
+      features that plausibly transfer between cell types — that is the
+      "macro-object" hypothesis this project already argues for.
+      <code class="inline">cv3.{i}.0</code> and
+      <code class="inline">cv3.{i}.1</code> are different: they exist to
+      make features that separate <i>this node's</i> classes from
+      background, and nothing else. Averaging them at the same rate as
+      the backbone treats the most contested parameters in the model as
+      if they were the least.</p>
+      <p style="margin-bottom:0;">Cheapest version: a per-layer-group
+      merge rate — the trunk takes the full aggregate, the classification
+      convs take a damped step toward it (keeping more of the previous
+      global value). One coefficient, no architecture change, no new
+      state beyond what the server already holds. Worth pairing with a
+      diagnostic that costs nothing: log the cross-node cosine similarity
+      of each layer group's deltas per round. If the classification convs
+      really are where nodes disagree most, that shows up immediately and
+      tells you how hard to damp.</p>
+      <div class="tech-meta">Touches: fedyolo/model.py aggregate_shared() (layer-group aware) · one new coefficient</div>
+    </div>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">M3</div><div class="tech-title">Give each node its own classification-branch head</div></div>
+        <div class="tech-badges"><span class="badge warn">moderate cost</span><span class="badge warn">architecture change</span><span class="badge fix">the structural version of M2</span></div>
+      </div>
+      <p>If the classification convs are irreconcilable between nodes,
+      the honest answer may be to stop reconciling them. Give each node
+      its own copy of <code class="inline">cv3.{i}.0</code>/<code class="inline">.1</code>
+      plus its own final per-class rows — one head branch per owner — and
+      merge only the trunk and the box branch. At inference the global
+      model runs every branch and concatenates their class outputs.</p>
+      <p>This extends the project's own thesis rather than departing from
+      it: the current design already says "parameters that are about a
+      specific class must not be averaged across nodes that don't own it."
+      The measurement above says the split was simply drawn one layer too
+      shallow — <code class="inline">cv3.{i}.2</code> alone is 0.02% of
+      the model, while the convs feeding it are 2.24% and just as
+      class-specific.</p>
+      <p style="margin-bottom:0;">Cost is real but bounded: replicating
+      the mixing convs four ways adds roughly 1.7M parameters to a 24.8M
+      model, about +7%. Note the split cannot be done by row-indexing the
+      way <code class="inline">cv3.{i}.2</code> is — those convs output a
+      fixed channel width, not one channel per class — so this is a
+      genuine head-structure change, not a change to
+      <code class="inline">per_class_param_names()</code>.</p>
+      <div class="tech-meta">Touches: fedyolo/model.py (head construction + aggregation), fedyolo/evaluate.py (multi-branch inference)</div>
+    </div>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">M4</div><div class="tech-title">Weight the trunk merge by supervision, not by image count</div></div>
+        <div class="tech-badges"><span class="badge good">low cost</span><span class="badge fix">an inconsistency already in the code</span></div>
+      </div>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;"><b>Measured
+      scope:</b> a provable no-op on WBC, where every image carries exactly one
+      object so instance and image counts coincide. On kfm12 it is large —
+      <code class="inline">node_B</code> falls from 41.9% to 24.7% of the
+      merge weight and <code class="inline">node_D</code> rises from 14.7% to
+      26.8% — so kfm12 is where it has to be tested.</p>
+      <p>The two aggregation paths disagree with each other today:
+      <code class="inline">aggregate_shared</code> weights each node by
+      its <i>image</i> count, while
+      <code class="inline">aggregate_per_class</code> weights by
+      <i>labeled-instance</i> count. Under extreme non-IID the two
+      diverge in a way that matters — a node's images are only labeled
+      for its own classes, so image count measures how much data a node
+      holds, not how much supervision it actually contributed to the
+      shared trunk. A node owning one class and a node owning three
+      contribute very differently to the trunk even at equal image
+      counts.</p>
+      <p style="margin-bottom:0;">Cheap to test both ways: switch the
+      trunk to instance-count weighting and see whether the reliability
+      chart's spread moves. A one-line change with a clear prediction
+      attached.</p>
+      <div class="tech-meta">Touches: fedyolo/server.py (node_weights passed to aggregate_shared)</div>
+    </div>
+
+        <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">M6</div><div class="tech-title">Stop averaging BatchNorm statistics across disjoint distributions</div></div>
+        <div class="tech-badges"><span class="badge good">low cost</span><span class="badge fix">real friction, narrower fix than the published method</span></div>
+      </div>
+      <p>Measured on the same checkpoint: <b>320 of 972 state-dict entries
+      are BatchNorm <code class="inline">running_mean</code>/<code class="inline">running_var</code>
+      buffers</b> (160 BN layers). They're floating-point and not
+      per-class keys, so <code class="inline">aggregate_shared</code>
+      (<code class="inline">model.py:336-345</code>) averages every one.
+      These are input-distribution statistics, and this federation is
+      non-IID by construction — <code class="inline">node_A</code>'s
+      images are the ones with neutrophils in them,
+      <code class="inline">node_D</code>'s have basophils, lymphocytes
+      and monocytes. Their mean describes no node's actual input. (The
+      integer <code class="inline">num_batches_tracked</code> buffers are
+      already handled sensibly — largest node's value, not a mean.)</p>
+      <p style="margin-bottom:0;">Stated honestly: textbook FedBN does not
+      transfer here. It assumes a personalized model per client, this
+      project ships one global model, and the server cannot recalibrate
+      statistics itself because it has no images. The applicable version
+      is narrower and diagnostic — freeze BN running stats after a warmup
+      period, or swap in a normalization layer with no cross-batch
+      statistics at all, and see whether the spread moves. Cheap, and it
+      would explain something real if it does.</p>
+      <div class="tech-meta">Touches: fedyolo/model.py (exclude BN buffers from aggregation) or the arch yaml</div>
+    </div>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">M7</div><div class="tech-title">Align channels before averaging (FedMA / Git Re-Basin family)</div></div>
+        <div class="tech-badges"><span class="badge bad">high cost</span><span class="badge fix">diagnose first — may not be needed</span></div>
+      </div>
+      <p>Coordinate-wise averaging assumes node <i>k</i>'s channel 17
+      means the same thing as node <i>j</i>'s channel 17. Networks have
+      permutation symmetry in their hidden units, so independently
+      trained models can compute similar functions with differently
+      ordered channels — averaging misaligned models damages both. The
+      established fix is to match channels across clients (Hungarian
+      matching, or optimal transport) before averaging.</p>
+      <p style="margin-bottom:0;">Honest assessment: this matters most
+      when clients train a long time between merges. Here every node
+      reloads the identical global weights at the start of every round
+      (<code class="inline">client.py:111</code>) and trains for two local
+      epochs, which pins them close to a single basin and is much of why
+      plain FedAvg works at all. So the payoff is uncertain — but it is
+      <i>measurable</i> before committing: log cross-node channel
+      correlation for a few layers just before aggregation. Near-perfect
+      correlation means alignment is a non-problem and this can be
+      dropped; visible drift means it's worth building. Run the
+      diagnostic, not the technique.</p>
+      <div class="tech-meta">Touches: a standalone diagnostic script first · full version touches fedyolo/model.py aggregation</div>
+    </div>
+  </section>
+
+  <section id="track-d">
+    <div class="sec-head"><span class="mono" style="color:var(--accent-ink);font-size:13px;">→</span><h2 class="sec-title">Track D — give the merge less to reconcile</h2></div>
+    <p>The complement to Track M: rather than merging divergence better,
+    produce less of it. These constrain how far a node's weights can
+    travel during local training, which is also the most likely
+    explanation for sync's higher seed-to-seed spread (± 8.5, against
+    async's ± 6.5).</p>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">D1</div><div class="tech-title">FedProx-style proximal term on local training</div></div>
+        <div class="tech-badges"><span class="badge good">low cost</span><span class="badge good">cheapest pilot in this doc</span></div>
+      </div>
+      <p>Add <code class="inline">μ/2 · ‖θ_k − Θ^r‖²</code> to each node's
+      local loss (Algorithm 1 line 3 / Algorithm 2 line 3): a penalty
+      pulling locally-trained weights back toward where the round
+      started, bounding how far any node can drift before aggregation.
+      Under disjoint classes each node's local optimum genuinely lies
+      somewhere different, so unconstrained local training pulls hardest
+      exactly where merging is hardest. One extra loss term, one new
+      hyperparameter (<code class="inline">federation.prox_mu</code>),
+      no architecture change.</p>
+      <div class="tech-meta">Touches: fedyolo/client.py (local loss), fedyolo/config.py (one new field)</div>
+    </div>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">D2</div><div class="tech-title">SCAFFOLD-style control variates</div></div>
+        <div class="tech-badges"><span class="badge bad">high cost</span><span class="badge fix">most principled, biggest lift</span></div>
+      </div>
+      <p>A per-node control variate that corrects local gradient
+      direction toward an estimated global direction — the strongest
+      published variance-reduction method for heterogeneity, and this
+      heterogeneity is as severe as it gets: nodes differ not merely in
+      data distribution but in which loss <i>dimensions</i> are active at
+      all. Requires maintaining and transmitting an extra state vector
+      per node, handled differently across sync's barrier and async's
+      independent cycles. The thing to reach for if D1 leaves spread on
+      the table — not the first build.</p>
+      <div class="tech-meta">Touches: fedyolo/client.py, fedyolo/server.py, new per-node protocol state (incl. fedyolo/net/)</div>
+    </div>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">D3</div><div class="tech-title">Server-side momentum on the trunk update</div></div>
+        <div class="tech-badges"><span class="badge warn">moderate cost</span></div>
+      </div>
+      <p>Replace the plain weighted average <code class="inline">Θ_S^{r+1}
+      ← Σ_k (n_k/N)·θ_k,S</code> with a momentum or Adam-style update on
+      the round-over-round delta, leaving per-class rows on the current
+      rule. Smooths round-to-round noise from whichever nodes happened to
+      move furthest that round. Composes with the FedNova step
+      normalization already in the code (<code class="inline">normalize_steps</code>)
+      — that changes what the aggregate direction <i>is</i>, this changes how
+      fast the global model follows it.</p>
+      <div class="tech-meta">Touches: fedyolo/model.py aggregate_shared(), fedyolo/server.py (optimizer state)</div>
+    </div>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">D4</div><div class="tech-title">Rotate the sync node order across rounds</div></div>
+        <div class="tech-badges"><span class="badge good">low cost</span><span class="badge fix">cheap diagnostic, uncertain payoff</span></div>
+      </div>
+      <p>Sync trains nodes in a fixed list order every round. If any one
+      node's gradients disproportionately shape the early rounds before
+      the model stabilizes, that's a systematic bias with a free fix.
+      Purely structural — no new loss term, no new state — and worth
+      running as a quick ablation before committing to D2 or D3.</p>
+      <div class="tech-meta">Touches: fedyolo/server.py (FedServer round loop, ordering only)</div>
+    </div>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">D5</div><div class="tech-title">Adaptive staleness discount for async</div></div>
+        <div class="tech-badges"><span class="badge good">low cost</span><span class="badge warn">lower priority — async is already tighter</span></div>
+      </div>
+      <p>Async uses a fixed <code class="inline">staleness_alpha</code> in
+      <code class="inline">w = 1/(1+α·τ)</code> for the whole run. A
+      schedule — decaying α as the global model stabilizes, or per-node α
+      adapted to that node's historical disagreement with the aggregate —
+      could tighten async further, but async's ± 6.5 is already the more
+      reliable of the two modes, so this ranks below the sync-side work.</p>
+      <div class="tech-meta">Touches: fedyolo/server.py (AsyncFedServer push handler)</div>
+    </div>
+  </section>
+
+  <section id="track-s">
+    <div class="sec-head"><span class="mono" style="color:var(--accent-ink);font-size:13px;">→</span><h2 class="sec-title">Track S — when the merge happens: two new modes</h2></div>
+    <p>Sync and async are two points in a space with more than two points
+    in it. Both of these are new values for
+    <code class="inline">federation.mode</code>, sitting between the
+    existing pair rather than replacing either.</p>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">S1</div><div class="tech-title">Buffered async (FedBuff-style) — merge every K submissions, not every 1</div></div>
+        <div class="tech-badges"><span class="badge warn">moderate cost</span><span class="badge fix">a superset of both existing modes</span></div>
+      </div>
+      <p>Async applies each delta the moment it lands; sync waits for all
+      <i>N</i>. A buffered mode accumulates deltas and applies their
+      staleness-weighted mean once <i>K</i> have arrived.
+      <code class="inline">K=1</code> reproduces today's async exactly and
+      <code class="inline">K=N</code> approximates sync, so the mode
+      contains both and the interesting behavior is in between.</p>
+      <p style="margin-bottom:0;">The reason to expect a win is precisely
+      the Track M problem: averaging K deltas before applying them
+      reduces the per-update noise that single-delta async injects,
+      without reintroducing the hard barrier that makes sync move at its
+      slowest member's pace. Fits the code shape — the async
+      push handler already serializes under a lock, which is where the
+      buffer would live.</p>
+      <div class="tech-meta">Touches: fedyolo/server.py (AsyncFedServer push path), one new federation.buffer_k field</div>
+    </div>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">S2</div><div class="tech-title">Bounded-staleness semi-sync — a soft barrier instead of a hard one</div></div>
+        <div class="tech-badges"><span class="badge good">low cost</span><span class="badge fix">cheapest of the new modes</span></div>
+      </div>
+      <p>Async lets a fast node run arbitrarily far ahead — the
+      current-state report's own honest caveat is that during such a
+      stretch the shared trunk absorbs disproportionately much of that
+      node's data distribution, which under disjoint ownership means
+      disproportionately much of one class subset. A staleness ceiling
+      fixes it without a full barrier: a node whose pull is more than
+      <code class="inline">τ_max</code> versions behind blocks until the
+      laggards catch up, and everything inside the window behaves exactly
+      as async does now.</p>
+      <p style="margin-bottom:0;">This bounds the failure mode D5 only
+      softens — with a ceiling, no update can become stale enough to be
+      discounted into irrelevance in the first place. A gate on the
+      existing pull path; the update rule itself doesn't change.</p>
+      <div class="tech-meta">Touches: fedyolo/server.py (AsyncFedServer pull path), one new federation.max_staleness field</div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--ink);">Ruled out, with the reason</h3>
+      <ul class="plain" style="margin-bottom:0;">
+        <li><b>Gossip / decentralized peer-to-peer averaging.</b> Nodes
+        would exchange weights directly with one another. Fails wall 1 at
+        its core — the point is that nodes never address each other.</li>
+        <li><b>Partial participation / client sampling</b> (standard
+        FedAvg's own default). Structurally worse here than in ordinary
+        non-IID FL: with one owner per class, skipping a node freezes
+        every class it owns for that whole round. Sampling 2 of 4 WBC
+        nodes leaves roughly half the classes with no updates at all.</li>
+        <li><b>Head personalization (FedPer and relatives).</b> Nothing
+        to add — the per-class head is already fully personalized under
+        single ownership, as the measurement section establishes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="track-a">
+    <div class="sec-head"><span class="mono" style="color:var(--accent-ink);font-size:13px;">→</span><h2 class="sec-title">Track A — the one lever that adds signal rather than merging it better</h2></div>
+    <p>Tracks M, D and S all make better use of the gradient signal that
+    exists. This track is different: it is the only way to put gradient
+    into the shared trunk for a class a node doesn't own — which is what
+    the oracle gets for free on every image, and what no merge rule can
+    manufacture. Both items respect all three walls.</p>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">A1</div><div class="tech-title">Give pseudo-labeling real box supervision, not just classification</div></div>
+        <div class="tech-badges"><span class="badge good">low-moderate cost</span><span class="badge good">node-independent ✓</span><span class="badge fix">the field report's own next step</span></div>
+      </div>
+      <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">No
+      new information channel: the teacher's predictions for unowned
+      classes come from real weight values other nodes already trained
+      into the model this node legitimately downloaded. A node never
+      needs to know what class 7 is <i>called</i> to use column 7's
+      already-real detection score as a target.</p>
+      <p>The existing mechanism (<code class="inline">fedyolo/pseudo_label.py</code>,
+      wired in <code class="inline">client.py:165-287</code>) pulls a
+      teacher's raw per-anchor classification logits for unowned columns,
+      thresholds them, and adds a soft BCE term — no NMS, no boxes,
+      nothing reaching the TAL assigner. That's a weak signal, and it
+      measured as one: enabling it landed statistically identical to off,
+      0.308 vs. 0.316 mAP50. The field report's own conclusion was to
+      give the teacher's confident <i>detections</i> real box+class
+      pseudo-targets through the normal assignment path instead.</p>
+      <p style="margin-bottom:0;">Concretely: run the teacher through NMS
+      for unowned classes on this node's own images above
+      <code class="inline">conf_thresh</code>, inject the survivors as
+      extra GT entries before the assigner runs, and weight their
+      contribution to classification <i>and</i> box/DFL loss by
+      <code class="inline">pseudo_label.weight</code>. Currently the box
+      and DFL losses never fire on an unowned-class object at all, so
+      this is the only proposal here that changes that.</p>
+      <div class="tech-meta">Touches: fedyolo/pseudo_label.py, fedyolo/client.py:165-287 · reuses existing config knobs</div>
+    </div>
+
+    <div class="tech-card">
+      <div class="tech-head">
+        <div><div class="tech-num">A2</div><div class="tech-title">Fix the teacher so async's self-distillation isn't self-defeating</div></div>
+        <div class="tech-badges"><span class="badge good">low cost</span><span class="badge good">node-independent ✓</span><span class="badge fix">bug-adjacent, worth doing regardless of A1</span></div>
+      </div>
+      <p>Confirmed asymmetry: sync's teacher
+      (<code class="inline">server.py:211-223</code>) is the global model
+      as of one full round <i>before</i> the student's starting point — a
+      stale but genuinely independent signal. Async's
+      (<code class="inline">server.py:527-532</code>) is
+      <code class="inline">pulled_sd</code>, the <i>same</i> weights the
+      student initializes from, so its distillation loss compares the
+      student against a copy of itself at cycle start. Whatever signal
+      A1 produces is diluted specifically under async until this is
+      fixed.</p>
+      <p style="margin-bottom:0;">Fix: keep a small ring buffer of recent
+      aggregated snapshots on the async server and hand each pulling node
+      a teacher from <i>N</i> cycles back rather than the one it's about
+      to train from — restoring the temporal distance sync gets by
+      construction.</p>
+      <div class="tech-meta">Touches: fedyolo/server.py:527-532 (AsyncFedServer) · no config change needed</div>
+    </div>
+  </section>
+
+  <section id="order">
+    <div class="sec-head"><span class="mono" style="color:var(--accent-ink);font-size:13px;">→</span><h2 class="sec-title">Suggested build order</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th class="num">#</th><th class="wrap-cell">Step</th><th class="wrap-cell">Why here</th></tr></thead>
+        <tbody>
+          <tr class="row-best"><td class="num">1</td><td class="wrap-cell">M4 — instance-count weighting, on kfm12</td><td class="wrap-cell">Cheap, and corrects an inconsistency already present in the code; a provable no-op on WBC, so kfm12 is the dataset to test it on</td></tr>
+          <tr><td class="num">2</td><td class="wrap-cell">D1 — FedProx proximal term</td><td class="wrap-cell">Cheapest way to test whether local drift is what the merge is failing to reconcile</td></tr>
+          <tr><td class="num">3</td><td class="wrap-cell">M2 — damped classification-branch merge, then M6 and D4 diagnostics</td><td class="wrap-cell">M2 only if re-aimed at the trunk (see its card); M6 and D4 are cheap and each rules something in or out</td></tr>
+          <tr><td class="num">4</td><td class="wrap-cell">A1 + A2 — box-supervised pseudo-labeling</td><td class="wrap-cell">The only lever that adds new signal rather than reusing existing signal better; more work than the merge-rule changes, so it follows them</td></tr>
+          <tr><td class="num">5</td><td class="wrap-cell">S2 then S1 (new modes), M3, D3, then D2 / M7</td><td class="wrap-cell">Architecture changes and new protocol state — worth it only once the cheap steps show where loss actually remains</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:14px 0 0;font-size:12.5px;color:var(--muted);">Nothing
+    above replaces <code class="inline">FedServer</code> or
+    <code class="inline">AsyncFedServer</code>'s existing round-barrier
+    and staleness-delta logic; sync and async stay exactly what they are,
+    and every item is something either mode can opt into. Class ownership
+    stays one class, one node, throughout.</p>
+  </section>
+
+</main>
+</div>
+
+<div class="wrap">
+  <footer>
+    <span>Design proposal — no code changed by this document. See the current state report for confirmed results.</span>
+    <span>Parameter counts from runs/wbc_detection_federation/wbc_yolo26classic_sync_l640_20ep · ultralytics 8.4.84</span>
+  </footer>
+</div>

@@ -1,0 +1,43 @@
+# Smoke-test config ONLY, for verifying fedyolo/net/'s real client-server
+# path end-to-end -- NOT a real leaderboard run. 2 nodes (a subset of
+# kfm_250423_clean12's own node_A/node_B, reusing their real, already
+# correctly-remapped local data), yolov8n (smallest/fastest arch), a tiny
+# balanced_fraction, and 2 rounds -- built to finish in a couple of minutes,
+# not for any mAP number to be taken seriously.
+global_classes:
+  - eimeria_intricata
+  - calicophoron
+  - moniezia_benedeni
+  - fasciola
+  - dicrocoelium
+  - metastrongili
+  - trichuris_trichiuria
+
+model:
+  arch: yolov8n.yaml
+  imgsz: 480
+
+federation:
+  mode: sync
+  rounds: 2
+  local_epochs: 1
+  balanced_fraction: 0.02
+  batch_size: 4
+  lr0: 0.0008
+  warmup_steps: 5
+  grad_clip: 10.0
+  workers: 0
+  device: auto
+  eval_interval: 2
+  max_concurrent_nodes: 1
+
+nodes:
+  - name: node_A
+    data_yaml: data/kfm_250423_clean12/node_A/data.yaml
+    owned_classes: [eimeria_intricata, calicophoron, moniezia_benedeni]
+  - name: node_B
+    data_yaml: data/kfm_250423_clean12/node_B/data.yaml
+    owned_classes: [fasciola, dicrocoelium, metastrongili, trichuris_trichiuria]
+
+output_dir: runs/net_smoketest
+seed: 0

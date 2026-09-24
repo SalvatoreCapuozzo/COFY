@@ -1,12 +1,31 @@
 """CLI entry point.
 
-    python -m fedyolo.simulate --config configs/example_federation.yaml
-    python -m fedyolo.simulate --config configs/example_federation.yaml --also-centralized
+    python -m fedyolo.simulate --config configs/your_federation.yaml
+    python -m fedyolo.simulate --config configs/your_federation.yaml --mode sync
+    python -m fedyolo.simulate --config configs/your_federation.yaml --mode async
+    python -m fedyolo.simulate --config configs/your_federation.yaml --also-centralized
+    python -m fedyolo.simulate --config configs/your_federation.yaml --also-centralized --also-oracle data/your_oracle_node/data.yaml
+
+--mode controls how many federated trainings run in this one invocation:
+    sync-async (default) — train BOTH sync and async from the same config,
+        one after another. --also-centralized/--also-oracle, if given, each
+        train ONCE and are shared by both (neither centralized.py nor
+        oracle.py actually reads federation.mode for anything except
+        matching the total local-epoch budget, which rounds*local_epochs
+        and async_node_cycles*local_epochs are designed to equal anyway --
+        so training them twice, once per sibling sync/async config file,
+        was pure redundant compute; this is the fix).
+    sync  — only the sync (round-barrier FedAvg) training.
+    async — only the async (staleness-discounted delta) training.
+--mode always overrides federation.mode in the config file (which still
+sets sync-specific/async-specific defaults like rounds/staleness_alpha,
+just not which mode(s) actually run).
 """
 
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import logging
 from datetime import datetime
@@ -19,7 +38,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.panel import Panel
 
-from .config import load_config
+from .config import FedYoloConfig, load_config
 from .evaluate import evaluate_state_dict, per_class_map50
 from .server import AsyncFedServer, FedServer
 
@@ -34,13 +53,99 @@ logging.basicConfig(
 log = logging.getLogger("fedyolo.simulate")
 console = Console()
 
+
+def _run_one_federated_mode(cfg: FedYoloConfig, mode: str, args, console, log) -> dict:
+    """Train and evaluate ONE federated mode (sync or async), writing its
+    checkpoints/live logs into their own `{cfg.output_dir}/{mode}/`
+    subfolder so a combined --mode sync-async run's two servers never
+    collide on shared filenames (both FedServer and AsyncFedServer write
+    `global_final.pt`, for instance). Returns the small metrics dict that
+    goes under summary["federated_sync"] / summary["federated_async"].
+    """
+    sub_cfg = dataclasses.replace(cfg, output_dir=str(Path(cfg.output_dir) / mode))
+    Path(sub_cfg.output_dir).mkdir(parents=True, exist_ok=True)
+
+    if mode == "async":
+        mode_detail = (
+            f"[bold magenta]ASYNC[/bold magenta] | "
+            f"cycles/node={sub_cfg.federation.async_node_cycles} | "
+            f"staleness_alpha={sub_cfg.federation.staleness_alpha} | "
+            f"total submissions={len(sub_cfg.nodes) * sub_cfg.federation.async_node_cycles}"
+        )
+        server = AsyncFedServer(sub_cfg)
+        log.info("[bold green]🚀 Starting ASYNC Federated Training...[/bold green]")
+    else:
+        mode_detail = (
+            f"[bold blue]SYNC[/bold blue] | "
+            f"rounds={sub_cfg.federation.rounds} | "
+            f"local_epochs={sub_cfg.federation.local_epochs}"
+        )
+        server = FedServer(sub_cfg)
+        log.info("[bold green]🚀 Starting SYNC Federated Training...[/bold green]")
+    console.print(Panel(mode_detail, title=f"[bold white]{mode} federated run[/bold white]"))
+
+    try:
+        federated_sd = server.run()
+    except Exception:
+        if args.auto_cleanup_oom:
+            from .gpu_cleanup import cleanup_after_crash
+            cleanup_after_crash()
+        raise
+    log.info(f"[bold green]✔ {mode} federated training complete![/bold green]")
+
+    # The server already evaluated after the last round/submission and printed
+    # the live table. Reuse that result instead of re-running a full
+    # validation pass.
+    if server._map_history:
+        final_fed = server._map_history[-1]
+        result = {
+            "map50":    final_fed["map50"],
+            "map50-95": final_fed["map5095"],
+            "per_class_map50": final_fed["per_class"],
+        }
+        log.info(
+            f"[bold green]Final {mode} federated mAP50=[/bold green][bold magenta]{final_fed['map50']:.4f}[/bold magenta]  "
+            f"[bold green]mAP50-95=[/bold green][bold magenta]{final_fed['map5095']:.4f}[/bold magenta]"
+        )
+    else:
+        # Fallback: eval_interval was set so high that no mid-training eval ran.
+        # Re-materializes this mode's own pooled val set under its subfolder --
+        # a known, minor redundancy in --mode sync-async (each mode's fallback
+        # eval pools separately rather than sharing one cache), not worth the
+        # extra plumbing to dedupe given how rarely this fallback path fires.
+        with console.status(f"[bold yellow]Evaluating {mode} federated model...", spinner="bouncingBar"):
+            fed_metrics = evaluate_state_dict(sub_cfg, federated_sd, name=f"federated_{mode}", verbose=True)
+        result = _summarize(fed_metrics)
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description="Federated object detection with heterogeneous class sets")
     parser.add_argument("--config", required=True, help="path to federation YAML config")
     parser.add_argument(
+        "--mode",
+        choices=["sync-async", "sync", "async"],
+        default="sync-async",
+        help="which federated training(s) to run in this invocation. "
+             "'sync-async' (default) trains both from the same config and "
+             "shares one --also-centralized/--also-oracle run across both "
+             "instead of retraining them per sibling config. Overrides "
+             "federation.mode in the config file.",
+    )
+    parser.add_argument(
         "--also-centralized",
         action="store_true",
         help="also train the non-federated centralized baseline for comparison (slower)",
+    )
+    parser.add_argument(
+        "--also-oracle",
+        default=None,
+        metavar="ORACLE_DATA_YAML",
+        help="also train the true full-annotation oracle baseline (one 'node' with every "
+             "class labeled on every image, e.g. data/kfm_250423_oracle/oracle/data.yaml from "
+             "`split_dataset_into_nodes.py --n-nodes 1`) -- distinct from --also-centralized, "
+             "which still respects each node's own partial labels. Slowest option: this "
+             "dataset is much bigger than any one node's.",
     )
     parser.add_argument(
         "--session",
@@ -89,24 +194,8 @@ def main():
             pass  # symlinks unsupported (e.g. some Windows setups) — non-fatal
     log.info(f"[bold cyan]Session output directory:[/bold cyan] {cfg.output_dir}")
 
-    # ── startup panel ────────────────────────────────────────────────────────
-    mode = cfg.federation.mode
-    if mode == "async":
-        mode_detail = (
-            f"[bold magenta]ASYNC[/bold magenta] | "
-            f"cycles/node={cfg.federation.async_node_cycles} | "
-            f"staleness_alpha={cfg.federation.staleness_alpha} | "
-            f"total submissions={len(cfg.nodes) * cfg.federation.async_node_cycles}"
-        )
-    else:
-        mode_detail = (
-            f"[bold blue]SYNC[/bold blue] | "
-            f"rounds={cfg.federation.rounds} | "
-            f"local_epochs={cfg.federation.local_epochs}"
-        )
-
     console.print(Panel(
-        f"[bold cyan]Mode:[/bold cyan] {mode_detail}\n"
+        f"[bold cyan]--mode:[/bold cyan] {args.mode}\n"
         f"[bold cyan]Global classes ({cfg.nc}):[/bold cyan] {cfg.global_classes}\n"
         f"[bold cyan]Nodes:[/bold cyan] {[n.name for n in cfg.nodes]}",
         title="[bold white]DAFYOLO — Federation Setup[/bold white]",
@@ -114,42 +203,17 @@ def main():
     for node in cfg.nodes:
         log.info(f"[bold blue]Node {node.name}[/bold blue] owns: {node.owned_classes}")
 
-    # ── server selection ─────────────────────────────────────────────────────
-    if mode == "async":
-        server = AsyncFedServer(cfg)
-        log.info("[bold green]🚀 Starting ASYNC Federated Training...[/bold green]")
-    else:
-        server = FedServer(cfg)
-        log.info("[bold green]🚀 Starting SYNC Federated Training...[/bold green]")
-
-    try:
-        federated_sd = server.run()
-    except Exception:
-        if args.auto_cleanup_oom:
-            from .gpu_cleanup import cleanup_after_crash
-            cleanup_after_crash()
-        raise
-    log.info("[bold green]✔ Federated training complete![/bold green]")
-
-    # The server already evaluated after the last round/submission and printed
-    # the live table. Reuse that result for the JSON summary instead of
-    # re-running a full validation pass.
-    if server._map_history:
-        final_fed = server._map_history[-1]
-        summary = {"federated": {
-            "map50":    final_fed["map50"],
-            "map50-95": final_fed["map5095"],
-            "per_class_map50": final_fed["per_class"],
-        }}
-        log.info(
-            f"[bold green]Final federated mAP50=[/bold green][bold magenta]{final_fed['map50']:.4f}[/bold magenta]  "
-            f"[bold green]mAP50-95=[/bold green][bold magenta]{final_fed['map5095']:.4f}[/bold magenta]"
-        )
-    else:
-        # Fallback: eval_interval was set so high that no mid-training eval ran
-        with console.status("[bold yellow]Evaluating federated model...", spinner="bouncingBar"):
-            fed_metrics = evaluate_state_dict(cfg, federated_sd, name="federated", verbose=True)
-        summary = {"federated": _summarize(fed_metrics)}
+    # ── federated training: one or both modes, per --mode ───────────────────
+    # Neither server class reads cfg.federation.mode internally (confirmed --
+    # it's purely a simulate.py-level dispatch decision), so the same cfg's
+    # rounds/async_node_cycles/etc. work for either server without cloning.
+    # Each mode gets its own output subfolder so a combined sync-async run's
+    # two servers never collide on shared checkpoint filenames like
+    # global_final.pt.
+    modes_to_run = ["sync", "async"] if args.mode == "sync-async" else [args.mode]
+    summary: dict = {}
+    for mode in modes_to_run:
+        summary[f"federated_{mode}"] = _run_one_federated_mode(cfg, mode, args, console, log)
     log.info("[bold green]✔ Evaluation complete![/bold green]")
 
     if args.also_centralized:
@@ -173,6 +237,28 @@ def main():
             central_metrics = evaluate_state_dict(cfg, central_sd, name="centralized")
             summary["centralized"] = _summarize(central_metrics)
         log.info("[bold green]✔ Centralized evaluation complete![/bold green]")
+
+    if args.also_oracle:
+        from .oracle import train_oracle_baseline
+
+        with console.status("[bold magenta]Training full-annotation oracle baseline (same total local epochs)...", spinner="aesthetic"):
+            try:
+                oracle_sd = train_oracle_baseline(cfg, args.also_oracle)
+            except Exception:
+                if args.auto_cleanup_oom:
+                    from .gpu_cleanup import cleanup_after_crash
+                    cleanup_after_crash()
+                raise
+            torch.save(
+                {"state_dict": oracle_sd, "global_classes": cfg.global_classes},
+                Path(cfg.output_dir) / "oracle_baseline.pt",
+            )
+        log.info("[bold green]✔ Oracle baseline training complete![/bold green]")
+
+        with console.status("[bold yellow]Evaluating oracle baseline...", spinner="bouncingBar"):
+            oracle_metrics = evaluate_state_dict(cfg, oracle_sd, name="oracle")
+            summary["oracle"] = _summarize(oracle_metrics)
+        log.info("[bold green]✔ Oracle evaluation complete![/bold green]")
 
     summary_path = Path(cfg.output_dir) / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2))

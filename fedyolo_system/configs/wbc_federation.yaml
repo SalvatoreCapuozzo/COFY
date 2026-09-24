@@ -1,0 +1,52 @@
+global_classes:
+- basophil
+- eosinophil
+- erythroblast
+- immunoglobulin
+- lymphocyte
+- monocyte
+- neutrophil
+model:
+  arch: yolov8n.yaml
+  imgsz: 960
+federation:
+  mode: async
+  local_epochs: 5
+  batch_size: 8
+  lr0: 0.0008
+  warmup_steps: 20
+  grad_clip: 10.0
+  workers: 0
+  device: auto
+  rounds: 5
+  async_node_cycles: 15
+  staleness_alpha: 0.5
+  max_concurrent_nodes: 1
+  eval_interval: 4
+  pseudo_label:
+    enabled: true
+    start_round: 5
+    conf_thresh: 0.6
+    weight: 0.5
+nodes:
+- name: node_A
+  data_yaml: data/wbc_detection_nodes/node_A/data.yaml
+  owned_classes:
+  - neutrophil
+- name: node_B
+  data_yaml: data/wbc_detection_nodes/node_B/data.yaml
+  owned_classes:
+  - eosinophil
+- name: node_C
+  data_yaml: data/wbc_detection_nodes/node_C/data.yaml
+  owned_classes:
+  - erythroblast
+  - immunoglobulin
+- name: node_D
+  data_yaml: data/wbc_detection_nodes/node_D/data.yaml
+  owned_classes:
+  - basophil
+  - lymphocyte
+  - monocyte
+output_dir: runs/from_global_federation
+seed: 0

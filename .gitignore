@@ -1,4 +1,5 @@
 .env
+*.ts
 runs*
 datasets/
 yolo*
@@ -12,3 +13,4 @@ ISBI*.pdf
 __pycache__
 .vscode
 fedyolo_system/data/
+.claude

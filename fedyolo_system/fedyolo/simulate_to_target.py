@@ -22,10 +22,12 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import random
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import torch
 import yaml
 from rich.console import Console
@@ -76,9 +78,13 @@ def load_target_run_config(path: str) -> TargetRunConfig:
 
 def train_centralized_to_target(cfg: FedYoloConfig, trc: TargetRunConfig) -> tuple[dict, dict]:
     device = torch.device(cfg.federation.device)
+    # See client.py's run_node_round for why random/np.random are seeded
+    # here too, not just torch.
+    random.seed(cfg.seed)
+    np.random.seed(cfg.seed % (2**32))
     torch.manual_seed(cfg.seed)
 
-    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained).to(device)
+    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes).to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=cfg.federation.lr0, momentum=0.9, weight_decay=5e-4)
 
     node_loaders = [
@@ -101,7 +107,10 @@ def train_centralized_to_target(cfg: FedYoloConfig, trc: TargetRunConfig) -> tup
             break
         for node, owned_ids, loader in node_loaders:
             model.class_weights = _class_mask(cfg.nc, owned_ids, device)
-            model.criterion = None  # force rebuild so it picks up the new mask
+            # See centralized.py's identical fix: `del`, not `= None` --
+            # YOLOEModel.loss() checks hasattr(), which `= None` doesn't clear.
+            if hasattr(model, "criterion"):
+                del model.criterion
             model.train()
 
             map_str = _read_latest_map(cfg.output_dir)

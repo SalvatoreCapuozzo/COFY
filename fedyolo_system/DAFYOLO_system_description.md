@@ -43,9 +43,23 @@ model after aggregation.
 
 ## 2. Model Architecture
 
-DAFYOLO uses a **YOLOv8** architecture (anchor-free, decoupled head) trained
-from random initialization. The architecture choice is critical: the
-**decoupled head** structure makes the per-class parameter decomposition exact.
+DAFYOLO uses a **YOLOv8** architecture (anchor-free, decoupled head),
+`model.pretrained: true` by default — the SHARED parameters below initialize
+from the arch's official COCO checkpoint, the per-class head stays random
+regardless (`pretrained: false` reproduces the original from-scratch
+behavior). The architecture choice is critical: the **decoupled head**
+structure makes the per-class parameter decomposition exact. A YOLO26
+variant with the same decoupled-head shape (`end2end: False`, `reg_max: 16`
+forced against YOLO26's own end2end default) is also supported —
+`configs/arch/yolo26_classic_{n,s,m,l,x}.yaml` — since `ultralytics.nn.modules.head.Detect`
+is the identical class for both architectures, parameterized rather than
+reimplemented; only the backbone/neck (YOLO26's C3k2/C2PSA) differ. YOLO26's
+native end-to-end head (`nc`-indexed weights doubled into a second
+`one2one_cv3` branch, both split the same way) and YOLOE's open-vocabulary
+head (no `cv3.{i}.2` at all -- every weight is SHARED, class identity comes
+from frozen text-prompt embeddings outside the state_dict entirely) are both
+also supported now — see the field report's YOLO26/YOLOE section for what
+each needed.
 
 ### 2.1 Parameter Decomposition
 
@@ -260,7 +274,8 @@ partial labels, which both approaches face equally.
 
 ```
 configs/
-  example_federation.yaml    — annotated config (mode, nodes, classes, hyperparameters)
+  kfm12_*.yaml    — annotated real-data configs (mode, nodes, classes, hyperparameters);
+                    generate your own with tools/split_dataset_into_nodes.py --config-out
 
 fedyolo/
   config.py          — FedYoloConfig schema; validates class coverage and mode
@@ -273,11 +288,13 @@ fedyolo/
   pooling.py         — pooled val dataset materialisation for evaluation
   evaluate.py        — calls Ultralytics val() on the pooled set
   optim_utils.py     — per-round LR warmup helper
-  simulate.py        — CLI entry point; routes to sync or async server
+  simulate.py        — CLI entry point; --mode picks sync-async (default,
+                        both)/sync/async and dispatches to the right server(s)
 
 tools/
   split_dataset_into_nodes.py  — splits one global dataset into per-node datasets
-  make_synthetic_dataset.py    — toy 3-node dataset generator for smoke-testing
+                                  (--n-nodes 1 also builds the --also-oracle node)
+  coco_to_yolo.py               — COCO JSON -> per-node YOLO dataset converter
 ```
 
 ---
@@ -286,7 +303,10 @@ tools/
 
 ```yaml
 federation:
-  mode: async              # "sync" | "async"
+  mode: async              # "sync" | "async" -- historical default when a
+                            # single mode ran; the CLI's --mode flag (see
+                            # §10) now decides which mode(s) actually run
+                            # and overrides this, defaulting to both
 
   # shared
   local_epochs: 5          # epochs per round (sync) or per cycle (async)
@@ -328,10 +348,7 @@ federation:
 # 1. Install
 pip install -r requirements.txt
 
-# 2. (Optional) generate synthetic toy data to smoke-test the pipeline
-python tools/make_synthetic_dataset.py --out data/synthetic --n-per-node 24
-
-# 3. Or split your own global dataset into per-node datasets
+# 2. Split your own global dataset into per-node datasets
 python tools/split_dataset_into_nodes.py \
     --dataset /path/to/dataset_folder \
     --out data/from_global \
@@ -339,11 +356,28 @@ python tools/split_dataset_into_nodes.py \
     --drop-classes bubble,dirt \
     --config-out configs/my_run.yaml
 
-# 4. Run federated training (mode selected in the config)
-python -m fedyolo.simulate --config configs/example_federation.yaml
+# 3. (Optional) build a true full-annotation oracle node the same way,
+#    with --n-nodes 1 instead of 4, for the --also-oracle baseline below
+python tools/split_dataset_into_nodes.py \
+    --dataset /path/to/dataset_folder \
+    --out data/my_oracle \
+    --n-nodes 1 \
+    --drop-classes bubble,dirt \
+    --config-out configs/my_run_oracle.yaml
 
-# 5. Also train and compare the centralized baseline
-python -m fedyolo.simulate --config configs/example_federation.yaml --also-centralized
+# 4. Run federated training -- default --mode is sync-async: trains BOTH
+#    sync and async from this one config, one after another
+python -m fedyolo.simulate --config configs/my_run.yaml
+
+# 4b. Or just one mode
+python -m fedyolo.simulate --config configs/my_run.yaml --mode sync
+
+# 5. Also train and compare the centralized baseline, and the oracle ceiling
+#    -- each trains ONCE and is shared across whichever federated mode(s)
+#    ran in step 4, rather than once per mode
+python -m fedyolo.simulate --config configs/my_run.yaml \
+    --also-centralized \
+    --also-oracle data/my_oracle/node_A/data.yaml
 ```
 
 Outputs are written to `runs/<output_dir>/`:

@@ -1,0 +1,53 @@
+federation:
+  async_node_cycles: 15
+  balanced_fraction: 0.1
+  batch_size: 2
+  device: auto
+  eval_interval: 2
+  grad_clip: 10.0
+  local_epochs: 2
+  lr0: 0.0008
+  max_concurrent_nodes: 1
+  mode: sync
+  pseudo_label:
+    conf_thresh: 0.6
+    enabled: false
+    start_round: 5
+    weight: 0.5
+  rounds: 10
+  staleness_alpha: 0.5
+  warmup_steps: 20
+  workers: 0
+global_classes:
+- basophil
+- eosinophil
+- erythroblast
+- immunoglobulin
+- lymphocyte
+- monocyte
+- neutrophil
+model:
+  arch: yolo26x.yaml
+  imgsz: 640
+nodes:
+- data_yaml: data/wbc_detection_nodes/node_A/data.yaml
+  name: node_A
+  owned_classes:
+  - neutrophil
+- data_yaml: data/wbc_detection_nodes/node_B/data.yaml
+  name: node_B
+  owned_classes:
+  - eosinophil
+- data_yaml: data/wbc_detection_nodes/node_C/data.yaml
+  name: node_C
+  owned_classes:
+  - erythroblast
+  - immunoglobulin
+- data_yaml: data/wbc_detection_nodes/node_D/data.yaml
+  name: node_D
+  owned_classes:
+  - basophil
+  - lymphocyte
+  - monocyte
+output_dir: runs/wbc_detection_federation
+seed: 0

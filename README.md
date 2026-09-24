@@ -7,8 +7,11 @@ subsets. Two implementations live in this repo:
 
 A class-decomposed rewrite: every per-class output channel aggregates only
 across the nodes that own that class, so training doesn't need a merge
-heuristic. Sync and async federation modes, a centralized baseline for
-comparison, and a synthetic dataset generator for a from-scratch smoke test.
+heuristic. Two federation strategies (sync: round-barrier FedAvg; async:
+staleness-discounted delta aggregation), a centralized baseline and a true
+full-annotation oracle baseline for comparison, and support for
+YOLOv8/YOLO26 (classic + native end2end)/YOLOE. Validated exclusively on
+real data — no synthetic/toy dataset in this repo.
 Start with [`fedyolo_system/README.md`](fedyolo_system/README.md).
 
 ## [`legacy/`](legacy/) — prior approach, kept for reference
@@ -24,9 +27,20 @@ Machine-specific paths (remote GPU box vs. this Mac) live in
 
 ## [`dafyolo_field_report.html`](dafyolo_field_report.html)
 
-A standalone diagnostic report comparing both systems — logged results,
-root-cause analysis, and a macOS compatibility audit. Open it directly in a
-browser; it has no external dependencies besides a Google Fonts stylesheet.
+The full audit trail — every run, every bug found and fixed, root-cause
+analysis, and a macOS compatibility audit. Grows with each update; open it
+directly in a browser (no external dependencies besides a Google Fonts
+stylesheet). Also published at
+https://claude.ai/code/artifact/2a78ddc2-3ee6-41ce-987f-1328dc4005fa.
+
+## [`dafyolo_current_state.html`](dafyolo_current_state.html)
+
+A living summary: current-best config, current numbers, open problems,
+and a schematic of how sync/async aggregation lines up with the
+YOLOv8/YOLO26/YOLOE architectures. Overwritten in place on each update
+rather than appended to — read this first if you just want "where things
+stand," and the field report above only if you want the history. Also
+published at https://claude.ai/code/artifact/caa25a33-1b24-4b0e-be7d-6fcde03d54a4.
 
 ## Install
 

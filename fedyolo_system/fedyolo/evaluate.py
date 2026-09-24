@@ -8,10 +8,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-from ultralytics import YOLO
+from ultralytics import RTDETR, YOLO
 
 from .config import FedYoloConfig
-from .model import build_model
+from .model import _is_rtdetr_arch, build_model
 from .pooling import materialize_pooled_dataset
 
 
@@ -44,14 +44,38 @@ def evaluate_state_dict(cfg: FedYoloConfig, state_dict: dict,
     verbose=False suppresses all Ultralytics stdout (table, per-class rows,
     speed summary) so the caller can display only what it wants via Rich.
     """
-    pooled_yaml = materialize_pooled_dataset(
-        cfg, split="val", out_dir=Path(cfg.output_dir) / "pooled_val",
-        fraction=cfg.federation.balanced_fraction, seed=cfg.seed,
-    )
-    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained)
+    if cfg.eval_data_yaml:
+        # A dedicated fully-labeled eval set: every model is scored on the
+        # same images with every class annotated. Never subsampled -- it is
+        # small by construction, and it is the number comparisons rest on.
+        pooled_yaml = Path(cfg.eval_data_yaml)
+    else:
+        pooled_yaml = materialize_pooled_dataset(
+            cfg, split="val", out_dir=Path(cfg.output_dir) / "pooled_val",
+            fraction=cfg.federation.balanced_fraction, seed=cfg.seed,
+        )
+    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes)
     model.load_state_dict(state_dict)
     model.names = {i: n for i, n in enumerate(cfg.global_classes)}
-    yolo = YOLO(cfg.model.arch)
+    # The wrapper class here is just a task shell for its own .val()
+    # machinery -- `.model` gets fully replaced on the next line regardless
+    # of what arch it was constructed from. Always use a stock arch (never
+    # cfg.model.arch) so this doesn't depend on ultralytics' own filename
+    # resolution finding fedyolo's custom, non-stock arch files (which
+    # build_model() above already resolved correctly through its own
+    # scale-aware loader -- see model.py's _resolve_arch_cfg).
+    #
+    # The wrapper CLASS matters, not just the arch filename: `YOLO(...)`
+    # always dispatches to DetectionValidator regardless of what `.model`
+    # gets swapped to afterward, and DetectionValidator cannot decode
+    # RTDETRDetectionModel's raw output format -- confirmed for real, not
+    # assumed: it silently ran to completion and reported exactly 0.0
+    # mAP50 for a pretrained RT-DETR model, every time, rather than
+    # erroring. RTDETRValidator is a genuinely different class
+    # (ultralytics dispatches on the wrapper type, not `.task`, which
+    # reads "detect" for both). Use the RTDETR(...) shell for RT-DETR
+    # archs so the correct validator is picked.
+    yolo = RTDETR("rtdetr-l.yaml") if _is_rtdetr_arch(cfg.model.arch) else YOLO("yolov8n.yaml")
     yolo.model = model
     metrics = yolo.val(
         data=str(pooled_yaml),

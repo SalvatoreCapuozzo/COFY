@@ -23,8 +23,9 @@ model:
   arch: yolov8n.yaml   # smallest arch — swift mechanism check, not a quality run.
                         # bump to yolov8l.yaml (as in kfm_250423_fed_260714.yaml)
                         # once the async loop is confirmed working end-to-end.
-  imgsz: 640            # kept high: real microscopy eggs are small, unlike the
-                        # doc's >=256 convergence floor for synthetic shapes.
+  imgsz: 640            # kept high: real microscopy eggs are small relative to
+                        # the frame, and need more resolution than a coarser
+                        # feature map can resolve at lower imgsz.
 federation:
   # ── mode selector ────────────────────────────────────────────────────────
   mode: async

@@ -14,12 +14,14 @@
 from __future__ import annotations
 
 import json
+import random
 import threading
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 import torch
-from ultralytics.utils.loss import v8DetectionLoss
+from ultralytics.utils.loss import E2ELoss, v8DetectionLoss
 
 from rich.console import Console
 from rich.progress import (
@@ -33,7 +35,7 @@ from rich.progress import (
 
 from .config import FedYoloConfig, NodeConfig
 from .data import build_node_dataloader, build_node_dataset, per_class_instance_counts
-from .model import build_model
+from .model import MaskedRTDETRDetectionLoss, build_model
 from .optim_utils import set_warmup_lr
 from .pseudo_label import distillation_loss
 
@@ -49,6 +51,11 @@ class NodeRoundResult:
     class_counts: dict
     owned_global_ids: list
     optimizer_state: dict
+    # Local optimizer steps actually taken this round. Nodes hold different
+    # amounts of data under a uniform local_epochs, so this differs per node --
+    # which is exactly the bias FedNova-style merge normalization removes
+    # (see fedyolo/merge.py step_scales()).
+    num_steps: int = 0
 
 
 def _optimizer_state_to_cpu(state_dict: dict) -> dict:
@@ -86,18 +93,79 @@ def run_node_round(
     teacher_state_dict: dict | None,
     optimizer_state: dict | None = None,
 ) -> NodeRoundResult:
+    # Seed every RNG the training path actually draws from, not just torch's.
+    # ultralytics' own augmentation pipeline (Mosaic, RandomPerspective,
+    # RandomHSV, RandomFlip, ...) reads from Python's `random` and numpy's
+    # RNG, not torch's -- leaving those unseeded meant every batch's mosaic
+    # composition, crop offsets, and color jitter were drawn from whatever
+    # state the process happened to auto-seed from OS entropy at startup,
+    # different every invocation regardless of `cfg.seed`. That was the
+    # actual dominant cause of the same-config-different-result runs
+    # documented in the reports (previously mischaracterized there as
+    # "MPS non-determinism" -- corrected: MPS-level nondeterminism may still
+    # contribute at the margin, but this was the bigger, fixable gap).
+    random.seed(cfg.seed + round_idx)
+    np.random.seed((cfg.seed + round_idx) % (2**32))
     torch.manual_seed(cfg.seed + round_idx)
     device = torch.device(cfg.federation.device)
 
     owned_ids = node.owned_global_ids(cfg.global_classes)
     unowned_ids = [c for c in range(cfg.nc) if c not in owned_ids]
 
-    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained).to(device)
+    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes).to(device)
     model.load_state_dict(global_state_dict)
     model.class_weights = _class_mask(cfg.nc, owned_ids, device)  # zeroes loss for unowned classes
     model.train()
 
-    criterion = v8DetectionLoss(model)
+    # end2end archs (YOLO26 native mode) forward() a nested
+    # {"one2many": {...}, "one2one": {...}} dict instead of one flat
+    # {boxes, scores, feats} dict -- same E2ELoss class ultralytics' own
+    # DetectionModel.init_criterion() picks for end2end models, so the loss
+    # value matches what model.loss(batch) would give (used by
+    # centralized.py/simulate_to_target.py, which go through that generic
+    # path and needed no changes here). Both of E2ELoss's internal
+    # v8DetectionLoss instances read model.class_weights off this same
+    # `model` at construction time, so the existing masking mechanism
+    # applies to both the one2many and one2one branches automatically.
+    from ultralytics.nn.modules.head import RTDETRDecoder
+    is_rtdetr = isinstance(model.model[-1], RTDETRDecoder)
+    end2end = getattr(model.model[-1], "end2end", False)
+    if is_rtdetr:
+        # RTDETRDetectionModel.loss(batch) (called below in place of the
+        # usual forward()-then-criterion() two-step -- RT-DETR's forward
+        # needs the batch during prediction for its denoising queries, so
+        # ultralytics bundles forward+loss into one method for it) picks
+        # up model.criterion if already set, rather than building its own
+        # (unmasked) RTDETRDetectionLoss via init_criterion() -- see
+        # BaseModel/RTDETRDetectionModel.loss()'s own
+        # `if not hasattr(self, "criterion")` check.
+        criterion = MaskedRTDETRDetectionLoss(nc=cfg.nc, owned_ids=owned_ids, use_vfl=True)
+        model.criterion = criterion
+    else:
+        criterion = E2ELoss(model) if end2end else v8DetectionLoss(model)
+    if end2end:
+        # BUG FOUND (this session): E2ELoss ramps its one2many/one2one loss
+        # weighting from o2m=0.8/o2o=0.2 at construction to o2m=0.1/o2o=0.9
+        # by the end of training -- but only if something calls
+        # criterion.update() once per epoch, which nothing in fedyolo ever
+        # did. Every end2end (Phase 2) run in this whole investigation
+        # trained with the one2one branch permanently stuck at its initial
+        # 20% loss weight -- and one2one is the ONLY branch actually used
+        # at inference/eval (Detect.forward() picks preds["one2one"] when
+        # self.training is False), so the branch that determines every
+        # reported mAP50 for Phase 2 was chronically undertrained the
+        # entire time. fedyolo's model.args is a minimal SimpleNamespace
+        # (see model.py's _default_train_args) with no `epochs` field at
+        # all, which decay() needs -- set it here to this round's
+        # local_epochs (not the federation's total epoch budget): the
+        # model/criterion are rebuilt fresh every round from the
+        # aggregated global weights, so local_epochs is the actual span
+        # this criterion instance will live for, and scoping the decay to
+        # it means one2one gets meaningfully trained within every single
+        # round's contribution instead of needing a persistent counter
+        # that would never survive the per-round rebuild anyway.
+        criterion.one2many.hyp.epochs = cfg.federation.local_epochs
+        criterion.one2one.hyp.epochs = cfg.federation.local_epochs
 
     use_distill = (
         cfg.federation.pseudo_label.enabled
@@ -107,7 +175,7 @@ def run_node_round(
     )
     teacher = None
     if use_distill:
-        teacher = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained).to(device)
+        teacher = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes).to(device)
         teacher.load_state_dict(teacher_state_dict)
         teacher.eval()
         for p in teacher.parameters():
@@ -173,17 +241,51 @@ def run_node_round(
                 batch["img"] = batch["img"].to(device).float() / 255.0
                 optimizer.zero_grad()
 
-                preds = model.forward(batch["img"])
-                parsed = criterion.parse_output(preds)
-                loss, _ = criterion.loss(parsed, batch)
+                if is_rtdetr:
+                    # Bundled forward+loss, not the forward()-then-criterion()
+                    # two-step below -- RT-DETR's forward needs the batch
+                    # during prediction for its denoising queries, so
+                    # ultralytics bundles both into one method for it (see
+                    # the is_rtdetr branch above where model.criterion is
+                    # set to the masked wrapper this picks up).
+                    loss, _ = model.loss(batch)
+                elif end2end:
+                    # preds is already {"one2many": {...}, "one2one": {...}}
+                    # -- E2ELoss.__call__ does its own internal parse/split,
+                    # no parse_output() step needed (that method is only a
+                    # no-op passthrough for a non-tuple input anyway).
+                    preds = model.forward(batch["img"])
+                    loss, _ = criterion(preds, batch)
+                else:
+                    preds = model.forward(batch["img"])
+                    parsed = criterion.parse_output(preds)
+                    loss, _ = criterion.loss(parsed, batch)
                 loss = loss.sum()
 
+                if use_distill and is_rtdetr:
+                    raise NotImplementedError(
+                        "pseudo-labeling isn't wired through RT-DETR's loss path -- "
+                        "leave federation.pseudo_label.enabled: false for RT-DETR configs"
+                    )
                 if use_distill:
                     with torch.no_grad():
                         t_preds = teacher.forward(batch["img"])
-                        t_parsed = criterion.parse_output(t_preds)
-                    student_scores = parsed["scores"].permute(0, 2, 1).contiguous()
-                    teacher_scores = t_parsed["scores"].permute(0, 2, 1).contiguous()
+                    # teacher.eval() means teacher.forward() returns the
+                    # eval-mode (y, preds) tuple, not the raw dict -- unwrap
+                    # it the same way parse_output() does for the non-e2e
+                    # path below (student stays the raw training-mode dict,
+                    # no unwrap needed there).
+                    if isinstance(t_preds, tuple):
+                        t_preds = t_preds[1]
+                    if end2end:
+                        # one2one: the NMS-free branch actually used at
+                        # inference, so that's what the teacher's "soft
+                        # label" should reflect for the not-owned classes.
+                        student_scores = preds["one2one"]["scores"].permute(0, 2, 1).contiguous()
+                        teacher_scores = t_preds["one2one"]["scores"].permute(0, 2, 1).contiguous()
+                    else:
+                        student_scores = parsed["scores"].permute(0, 2, 1).contiguous()
+                        teacher_scores = t_preds["scores"].permute(0, 2, 1).contiguous()
                     d_loss = distillation_loss(
                         student_scores, teacher_scores, unowned_ids, cfg.federation.pseudo_label.conf_thresh
                     )
@@ -212,7 +314,13 @@ def run_node_round(
 
             # --- END OF EPOCH LOGGING ---
             avg_epoch_loss = epoch_loss / max(1, num_batches)
-            
+
+            if end2end:
+                # Advance the one2many->one2one decay schedule now that a
+                # full epoch has actually happened -- see the comment where
+                # criterion.one2many.hyp.epochs was set above.
+                criterion.update()
+
             # Refresh mAP string once per epoch so the next epoch's batches
             # show the latest evaluation result without hammering the filesystem.
             map_str = _read_latest_map(cfg.output_dir)
@@ -239,4 +347,5 @@ def run_node_round(
         class_counts=class_counts,
         owned_global_ids=owned_ids,
         optimizer_state=returned_optimizer_state,
+        num_steps=step,
     )

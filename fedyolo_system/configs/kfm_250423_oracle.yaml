@@ -1,0 +1,53 @@
+global_classes:
+- strongili
+- fasciola
+- eimeria_intricata
+- calicophoron
+- nematodirus
+- dicrocoelium
+- metastrongili
+- strongyloides
+- moniezia_benedeni
+- ascaris
+- ancylostoma
+- trichuris_trichiuria
+model:
+  arch: yolov8n.yaml
+  imgsz: 960
+federation:
+  mode: async
+  local_epochs: 5
+  batch_size: 8
+  lr0: 0.0008
+  warmup_steps: 20
+  grad_clip: 10.0
+  workers: 0
+  device: auto
+  rounds: 5
+  async_node_cycles: 15
+  staleness_alpha: 0.5
+  max_concurrent_nodes: 1
+  eval_interval: 1
+  pseudo_label:
+    enabled: true
+    start_round: 5
+    conf_thresh: 0.6
+    weight: 0.5
+nodes:
+- name: node_A
+  data_yaml: data/kfm_250423_oracle/node_A/data.yaml
+  owned_classes:
+  - strongili
+  - fasciola
+  - eimeria_intricata
+  - calicophoron
+  - nematodirus
+  - dicrocoelium
+  - metastrongili
+  - strongyloides
+  - moniezia_benedeni
+  - ascaris
+  - ancylostoma
+  - trichuris_trichiuria
+output_dir: runs/from_global_federation
+seed: 0
