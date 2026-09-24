@@ -3,6 +3,8 @@
 runs*
 datasets/
 yolo*
+# ...but not the model-architecture YAMLs the configs build from
+!fedyolo_system/configs/arch/yolo*.yaml
 global_*
 client_person*
 client_car*
