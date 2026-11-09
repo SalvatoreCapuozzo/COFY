@@ -1,0 +1,67 @@
+global_classes:
+- Atelectasis
+- Calcification
+- Consolidation
+- Effusion
+- Emphysema
+- Fibrosis
+- Fracture
+- Mass
+- Nodule
+- Pneumothorax
+model:
+  arch: configs/arch/yolo26_classic_l.yaml
+  imgsz: 640
+  pretrained: true
+federation:
+  local_epochs: 2
+  batch_size: 4
+  lr0: 0.0008
+  warmup_steps: 20
+  grad_clip: 10.0
+  workers: 0
+  device: auto
+  balanced_fraction: 0.5
+  rounds: 28
+  async_node_cycles: 28
+  staleness_alpha: 0.5
+  max_concurrent_nodes: 1
+  pseudo_label:
+    enabled: false
+    start_round: 5
+    conf_thresh: 0.6
+    weight: 0.5
+  merge_rule: mean
+  normalize_steps: false
+  eval_interval: 1000
+  keep_checkpoints: 1
+  lr_schedule: linear
+  lrf: 0.01
+  async_order: shuffle
+  swa_last: 4
+nodes:
+- name: node_A
+  data_yaml: data/study/chestx/node_A/data.yaml
+  owned_classes:
+  - Consolidation
+- name: node_B
+  data_yaml: data/study/chestx/node_B/data.yaml
+  owned_classes:
+  - Effusion
+- name: node_C
+  data_yaml: data/study/chestx/node_C/data.yaml
+  owned_classes:
+  - Atelectasis
+  - Calcification
+  - Nodule
+  - Pneumothorax
+- name: node_D
+  data_yaml: data/study/chestx/node_D/data.yaml
+  owned_classes:
+  - Emphysema
+  - Fibrosis
+  - Fracture
+  - Mass
+eval_data_yaml: data/study/chestx/_eval/data.yaml
+output_dir: runs/variants/confirm_v2sync/chestx
+seed: 103

@@ -83,6 +83,43 @@ exactly the quantities above from each run's `summary.json`.
 - **kfm12 and WBC are replications, not blind tests.** Results for both under
   the earlier (flawed) per-node split were seen before this protocol was fixed.
   ChestX-Det10 is the confirmatory dataset.
+- **2026-09-24 — hardware changed: Apple M2 Pro (MPS) → NVIDIA RTX 3080 Laptop
+  GPU 8 GB (CUDA).** The Mac completed one run (kfm12 seed 0) before stopping on
+  its low-disk guard. To keep every primary run on identical hardware, all 15
+  runs are executed on the RTX 3080; the Mac's kfm12 seed 0 is kept as a
+  cross-hardware replication and excluded from the primary analysis. Data
+  were rebuilt on the new machine and verified identical to the originals
+  (138/138 fingerprints). Software: Python 3.10.13, torch 2.12.1 (CUDA 13.0,
+  cuDNN 9.20), ultralytics 8.4.84, numpy 2.2.6, NVIDIA driver 580.178.04.
+  Smoke test (WBC s0 config, 1 round, 2% data): peak VRAM 6,605 MiB, mean GPU
+  utilization ~81% with `workers: 0` unchanged. No config, split, seed or
+  threshold was changed.
+- **2026-09-25 — primary study paused between seeds for a labeled variant.**
+  After seeds 0–2 of all datasets and kfm12 seed 3 (10/15 runs), the runner
+  was stopped at 08:38, 6 min into wbc seed 3, to run the FedNova variant
+  (`normalize_steps: true`, sync only, seeds 0–2; `configs/variants/fednova/`,
+  `runs/variants/fednova/`) on the user's instruction. The interim analysis
+  had been looked at before this decision. The variant is a separate
+  experiment and does not enter the primary analysis. The primary resumes
+  automatically afterwards (`runs/study/_runner2.log`); wbc seed 3 restarts
+  from its start with the same seed. No config, split, seed or threshold of
+  the primary study was changed.
+- **2026-09-25 — primary study stopped at 3 seeds (5 → 3), by user decision.**
+  The remaining seeds (wbc and chestx seed 3, all seed 4) will not be run; the
+  GPU time goes to labeled variants instead. This decision was taken **after**
+  the interim 3-seed analysis had been seen, so the confirmatory status of
+  the test is weakened and this must be reported alongside any result. With
+  n = 3, t(0.975, 2) = 4.30: this is the underpowered design this protocol's
+  first deviation moved away from. Primary analysis = seeds 0–2 on every
+  dataset; kfm12 seed 3 (already finished) is reported separately, not
+  pooled, so every dataset has the same n. The 90% margin is unchanged.
+- **2026-10-08 — main threshold for the follow-up search lowered to 85%
+  (L ≥ 0.85), by user decision.** Taken **after** the primary and follow-up
+  results had been seen, so it is post hoc and must be reported as such. The
+  test is otherwise unchanged: lower bound of the 95% CI of Fed:Cent over
+  seeds, every dataset, sync and async. Results at the pre-registered 0.90
+  stay reported next to it (`analysis/SEARCH_REPORT.md`). The primary study's
+  own analysis (`tools/analyze_study.py`) is not changed.
 
 ## Measured data counts (filled in before training)
 

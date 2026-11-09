@@ -1,0 +1,68 @@
+global_classes:
+- strongili
+- fasciola
+- eimeria_intricata
+- calicophoron
+- nematodirus
+- dicrocoelium
+- metastrongili
+- strongyloides
+- moniezia_benedeni
+- ascaris
+- ancylostoma
+- trichuris_trichiuria
+model:
+  arch: configs/arch/yolo26_classic_l.yaml
+  imgsz: 640
+  pretrained: true
+federation:
+  local_epochs: 2
+  batch_size: 4
+  lr0: 0.0008
+  warmup_steps: 20
+  grad_clip: 10.0
+  workers: 0
+  device: auto
+  balanced_fraction: 0.1
+  rounds: 10
+  async_node_cycles: 10
+  staleness_alpha: 0.5
+  max_concurrent_nodes: 1
+  pseudo_label:
+    enabled: false
+    start_round: 5
+    conf_thresh: 0.6
+    weight: 0.5
+  merge_rule: mean
+  normalize_steps: false
+  eval_interval: 20
+  keep_checkpoints: 1
+  async_mix: 0.6
+nodes:
+- name: node_A
+  data_yaml: data/study/kfm12/node_A/data.yaml
+  owned_classes:
+  - eimeria_intricata
+  - calicophoron
+  - moniezia_benedeni
+- name: node_B
+  data_yaml: data/study/kfm12/node_B/data.yaml
+  owned_classes:
+  - fasciola
+  - dicrocoelium
+  - metastrongili
+  - trichuris_trichiuria
+- name: node_C
+  data_yaml: data/study/kfm12/node_C/data.yaml
+  owned_classes:
+  - strongili
+  - nematodirus
+  - strongyloides
+- name: node_D
+  data_yaml: data/study/kfm12/node_D/data.yaml
+  owned_classes:
+  - ascaris
+  - ancylostoma
+eval_data_yaml: data/study/kfm12/_eval/data.yaml
+output_dir: runs/variants/fedasync/kfm12
+seed: 2

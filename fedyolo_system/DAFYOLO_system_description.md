@@ -4,11 +4,15 @@
 
 DAFYOLO is a federated learning framework for multi-class object detection in
 which participating nodes hold **disjoint subsets of class annotations** — a
-common real-world constraint in distributed microscopy screening, where
-different laboratory sites specialize in different parasite egg taxa. All
-nodes start from **randomly initialized (blank) weights** and train on the
-same visual domain. The resulting global model detects all classes jointly
-without any node ever sharing its raw images.
+common real-world constraint in distributed medical imaging, where different
+sites specialize in different findings (e.g. different parasite egg taxa in
+microscopy screening). It is evaluated on three datasets: kfm12 (12 parasite
+egg classes, microscopy), WBC (7 white-blood-cell classes, microscopy) and
+ChestX-Det10 (10 chest X-ray findings). All nodes start from the **same
+initial model** — shared layers transferred from a COCO-pretrained checkpoint,
+per-class output rows randomly initialized — and train within the same visual
+domain. The resulting global model detects all classes jointly without any
+node ever sharing its raw images.
 
 The framework supports two aggregation strategies selectable via configuration:
 a **synchronous baseline** (classic round-barrier FedAvg with class-conditional
@@ -43,17 +47,22 @@ model after aggregation.
 
 ## 2. Model Architecture
 
-DAFYOLO uses a **YOLOv8** architecture (anchor-free, decoupled head),
-`model.pretrained: true` by default — the SHARED parameters below initialize
-from the arch's official COCO checkpoint, the per-class head stays random
-regardless (`pretrained: false` reproduces the original from-scratch
-behavior). The architecture choice is critical: the **decoupled head**
-structure makes the per-class parameter decomposition exact. A YOLO26
-variant with the same decoupled-head shape (`end2end: False`, `reg_max: 16`
-forced against YOLO26's own end2end default) is also supported —
-`configs/arch/yolo26_classic_{n,s,m,l,x}.yaml` — since `ultralytics.nn.modules.head.Detect`
-is the identical class for both architectures, parameterized rather than
-reimplemented; only the backbone/neck (YOLO26's C3k2/C2PSA) differ. YOLO26's
+DAFYOLO uses an anchor-free YOLO detector with a **decoupled head**; the
+decoupled head is what makes the per-class parameter decomposition below
+exact. `model.pretrained: true` is the default — the SHARED parameters below
+initialize from the arch's official COCO checkpoint, the per-class head stays
+random regardless (`pretrained: false` reproduces the original from-scratch
+behavior).
+
+**Model used in the study: YOLO26-classic, scale l, 640 px**
+(`configs/arch/yolo26_classic_l.yaml`): YOLO26's backbone/neck (C3k2/C2PSA)
+with the classic decoupled `Detect` head (`end2end: False`) instead of YOLO26's
+end-to-end head. `reg_max` stays at YOLO26's own value of 1 (DFL becomes an
+identity), so the box branch also transfers from the pretrained `yolo26l.pt`
+checkpoint; an earlier version forced `reg_max: 16`, which silently prevented
+that transfer. `ultralytics.nn.modules.head.Detect` is the identical class for
+YOLOv8 and YOLO26-classic, parameterized rather than reimplemented, so
+**YOLOv8** (`yolov8{n,s,m,l,x}`) is supported unchanged. YOLO26's
 native end-to-end head (`nc`-indexed weights doubled into a second
 `one2one_cv3` branch, both split the same way) and YOLOE's open-vocabulary
 head (no `cv3.{i}.2` at all -- every weight is SHARED, class identity comes
@@ -208,6 +217,8 @@ receives weight 0.286.
 
 Starting at cycle index `start_round` (per-node), each node optionally
 applies **cross-round self-distillation** for classes it does not own.
+It is **off in the study** (`pseudo_label.enabled: false`): in earlier
+single-seed tests it scored the same as without it (0.308 vs. 0.316 mAP50).
 
 In **sync mode**, the teacher is the previous round's global model.
 In **async mode**, the teacher is the global snapshot the node pulled at
@@ -232,15 +243,19 @@ the global model is reliable enough to trust.
 
 ## 6. Training Stability
 
-Training YOLO from random initialization (no pretrained transfer) is prone
-to large gradient spikes on the first few batches because predicted box
-coordinates and class logits start essentially arbitrary. Two mechanisms are
-applied:
+Even with pretrained shared layers, the per-class output rows start random,
+so the first batches of training can produce large gradient spikes. Local
+training uses SGD (momentum 0.9, weight decay 5e-4) with a constant learning
+rate `lr0` after warmup, and three mechanisms:
 
 **Per-round/cycle LR warmup**: a linear ramp from $0$ to $\eta_0$ over the
-first `warmup_steps` gradient steps. This matters in both modes because each
-round/cycle reloads the global state dict into a fresh optimizer (momentum
-and variance estimates restart from zero).
+first `warmup_steps` gradient steps of every round/cycle, because each
+round/cycle reloads freshly aggregated global weights.
+
+**Per-node momentum carried across rounds/cycles**: each node's SGD momentum
+buffers are kept by the server and restored at the node's next round/cycle,
+instead of restarting cold. Only the optimizer statistics persist; the
+weights always come from the current global model.
 
 **Gradient norm clipping**: gradients are clipped to a maximum L2 norm of
 `grad_clip` (default 10.0) before each optimizer step.
@@ -256,17 +271,30 @@ small objects. Use at least 256 pixels; 640 pixels for real microscopy data.
 
 ## 7. Evaluation
 
-The global model is evaluated on a **pooled validation set**: all nodes'
-validation splits are merged into a single dataset, with label files rewritten
-to use global class ids. Evaluation uses Ultralytics' standard
-`DetectionValidator` pipeline directly, so mAP numbers are computed with the
-same NMS and IoU-matching logic as any standard YOLO benchmark.
+Every model is evaluated on a **held-out, fully annotated evaluation set**
+(`eval_data_yaml`): images drawn once from the global dataset before it is
+split into nodes (`split_dataset_into_nodes.py --split-mode global`), with
+**every** class labeled on every image and never subsampled. Federated,
+centralized and oracle models are all scored on the same images. (Without
+`eval_data_yaml`, the fallback merges the nodes' own validation splits; there
+each image is labeled only for its node's classes, so correct detections of
+other classes count as false positives. That is why the study uses the
+dedicated set.) Evaluation uses Ultralytics' standard `DetectionValidator`
+pipeline directly, so mAP numbers are computed with the same NMS and
+IoU-matching logic as any standard YOLO benchmark.
 
-The **centralized baseline** trains one model directly over the union of all
-nodes' images, with the same per-node class masking (since a node's images
-genuinely lack ground-truth for unowned classes regardless of whether training
-is federated). This isolates the cost of federation from the cost of
-partial labels, which both approaches face equally.
+Two baselines, each trained once per run for the same total number of epochs
+as the federated models (`rounds` × `local_epochs`):
+
+- The **centralized baseline** trains one model directly over the union of
+  all nodes' training images, with the same per-node class masking (a node's
+  images genuinely lack ground truth for unowned classes whether or not
+  training is federated). This isolates the cost of federation from the cost
+  of partial labels, which both approaches face equally.
+- The **oracle** trains one model on the same global training pool with
+  **every** class labeled on every image (`--also-oracle`, built with
+  `split_dataset_into_nodes.py --n-nodes 1`): the full-annotation ceiling,
+  i.e. what the partial labels cost on top of federation.
 
 ---
 
@@ -274,44 +302,63 @@ partial labels, which both approaches face equally.
 
 ```
 configs/
-  kfm12_*.yaml    — annotated real-data configs (mode, nodes, classes, hyperparameters);
-                    generate your own with tools/split_dataset_into_nodes.py --config-out
+  study/{kfm12,wbc,chestx}_s{0..4}.yaml — the pre-registered study's run configs
+  arch/yolo26_classic{,_n,_s,_m,_l,_x}.yaml — YOLO26 backbone + classic Detect head
+  kfm12_*.yaml, wbc_*.yaml — earlier experiment configs; generate your own with
+                    tools/split_dataset_into_nodes.py --config-out
 
 fedyolo/
   config.py          — FedYoloConfig schema; validates class coverage and mode
   model.py           — build_model(), parameter decomposition, sync aggregation
+  merge.py           — shared-parameter merge rules (sample-weighted mean = FedAvg)
   data.py            — per-node dataset loading with local→global class id remap
+  sampling.py        — class-stratified subsampling (balanced_fraction)
   client.py          — run_node_round(): one node's local training (sync + async)
   server.py          — FedServer (sync) and AsyncFedServer (async)
   pseudo_label.py    — cross-round distillation loss
   centralized.py     — non-federated baseline trainer
-  pooling.py         — pooled val dataset materialisation for evaluation
-  evaluate.py        — calls Ultralytics val() on the pooled set
+  oracle.py          — full-annotation oracle baseline
+  pooling.py         — pooled val dataset (fallback when no eval_data_yaml is set)
+  evaluate.py        — calls Ultralytics val() on the evaluation set
   optim_utils.py     — per-round LR warmup helper
+  gpu_cleanup.py     — kills leftover worker processes / frees GPU memory
   simulate.py        — CLI entry point; --mode picks sync-async (default,
                         both)/sync/async and dispatches to the right server(s)
 
 tools/
   split_dataset_into_nodes.py  — splits one global dataset into per-node datasets
-                                  (--n-nodes 1 also builds the --also-oracle node)
+                                  (--split-mode global: one image-level split
+                                  plus the held-out eval set; --n-nodes 1 also
+                                  builds the --also-oracle node)
   coco_to_yolo.py               — COCO JSON -> per-node YOLO dataset converter
+  run_study.py                  — resumable sequential runner for the study
+  analyze_study.py              — the pre-registered analysis
+  study_manifest.py, rebuild_study_data.py — fingerprint and rebuild the study data
+  launch_detached.py            — starts a runner that survives the terminal closing
 ```
 
 ---
 
 ## 9. Configuration Reference
 
+Values below are the study's (`configs/study/kfm12_s0.yaml`); comments give
+the meaning and, where different, the code default.
+
 ```yaml
+model:
+  arch: configs/arch/yolo26_classic_l.yaml
+  imgsz: 640
+  pretrained: true         # shared layers from the arch's COCO checkpoint
+
 federation:
-  mode: async              # "sync" | "async" -- historical default when a
-                            # single mode ran; the CLI's --mode flag (see
-                            # §10) now decides which mode(s) actually run
-                            # and overrides this, defaulting to both
+  # mode: not set in the study configs. "sync" | "async" (code default "sync")
+  # only matters for a single-mode run; the CLI's --mode flag (see §10)
+  # decides which mode(s) actually run and overrides it, defaulting to both
 
   # shared
-  local_epochs: 5          # epochs per round (sync) or per cycle (async)
-  batch_size: 8
-  lr0: 0.0008
+  local_epochs: 2          # epochs per round (sync) or per cycle (async)
+  batch_size: 4
+  lr0: 0.0008              # constant after warmup
   warmup_steps: 20
   grad_clip: 10.0
   workers: 0
@@ -320,25 +367,44 @@ federation:
                            # "cuda:0"/"mps"/"cpu" instead if you need a specific one.
   data_fraction: 1.0       # naive prefix slice of each node's TRAIN images
                            # (Ultralytics' own `fraction=`) -- not class-aware.
-  balanced_fraction: null  # class-stratified alternative applied to train AND
-                           # the pooled eval set: every class keeps
-                           # max(1, round(count * balanced_fraction)) of its
-                           # images. Overrides data_fraction when set (e.g. 0.10
-                           # for a fast, class-balanced ~10% local run).
+  balanced_fraction: 0.1   # class-stratified subsample of each node's training
+                           # images: every class keeps max(1, round(count *
+                           # balanced_fraction)) of its images; the seed picks
+                           # which. Study: 0.1 kfm12, 0.1 WBC, 0.5 ChestX-Det10.
+                           # Overrides data_fraction when set (default: null).
+  max_concurrent_nodes: 1  # how many nodes train at the same time (see §4.2)
+
+  # shared-parameter merge (sync)
+  merge_rule: mean         # sample-weighted FedAvg (default)
+  weight_basis: images     # node weight = number of training images (default)
+  normalize_steps: false   # FedNova step normalization (off)
 
   # sync only
-  rounds: 20
+  rounds: 10
 
   # async only
-  async_node_cycles: 15    # total submissions = n_nodes × async_node_cycles
+  async_node_cycles: 10    # total submissions = n_nodes × async_node_cycles
   staleness_alpha: 0.5     # w = 1 / (1 + alpha × staleness)
 
+  eval_interval: 20        # intermediate evaluation every N rounds (sync) or N
+                           # submissions (async); the final model is always evaluated
+  keep_checkpoints: 1      # global checkpoints kept on disk (sync rounds)
+
   pseudo_label:
-    enabled: true
+    enabled: false         # off in the study (§5)
     start_round: 5         # cycle index (async) or round index (sync)
     conf_thresh: 0.6
     weight: 0.5
+
+eval_data_yaml: data/study/kfm12/_eval/data.yaml   # held-out fully annotated set (§7)
+seed: 0                    # also selects each node's balanced subsample
 ```
+
+Options that exist for labeled follow-up experiments and are **off** in the
+study: `merge_rule: ties | fisher`, `normalize_steps: true`,
+`weight_basis: instances`, `exclusion_loss`, `pseudo_label.conditional`,
+`pseudo_label.boxes`, `async_rule: ca2fl` (with `ca2fl_cache: false` = FedBuff)
+and `async_mix` (FedAsync-style partial mixing).
 
 ---
 
@@ -380,10 +446,15 @@ python -m fedyolo.simulate --config configs/my_run.yaml \
     --also-oracle data/my_oracle/node_A/data.yaml
 ```
 
+The pre-registered study is run with `tools/run_study.py` (resumable; one
+`fedyolo.simulate --mode sync-async --also-centralized --also-oracle` call per
+dataset and seed), launched through `tools/launch_detached.py`.
+
 Outputs are written to `runs/<output_dir>/`:
-- **Sync**: `global_round{N:03d}.pt` per round, `global_final.pt`
-- **Async**: `global_v{V:04d}_{node_name}.pt` per submission (full trajectory),
-  `global_final.pt`
+- **Sync**: `global_round{N:03d}.pt` for the last `keep_checkpoints` rounds only
+  (older ones are deleted to save disk), `global_final.pt`
+- **Async**: only the latest `global_v{V:04d}_{node_name}.pt` (earlier versions
+  are deleted as each new one is written), `global_final.pt`
 - `eval/` — mAP results from Ultralytics validator
 - `summary.json` — per-class mAP50 and overall mAP50 / mAP50-95 for
   federated and (optionally) centralized models

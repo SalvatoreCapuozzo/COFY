@@ -30,13 +30,21 @@ from .client import _class_mask
 from .config import FedYoloConfig
 from .data import build_node_dataloader
 from .model import build_model
-from .optim_utils import set_warmup_lr
+from .optim_utils import schedule_factor, set_warmup_lr
 
 log = logging.getLogger("fedyolo.centralized")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 
-def train_centralized_baseline(cfg: FedYoloConfig) -> dict:
+def train_centralized_baseline(cfg: FedYoloConfig, on_epoch_end=None, swa_last: int = 0) -> dict:
+    """on_epoch_end(epoch, model) -> bool, optional: called after every epoch (all nodes);
+    returning True stops training early (tools/budget_pilot.py).
+
+    swa_last > 0: return the average of `swa_last` snapshots taken at even intervals over the last
+    `local_epochs` epochs, the weight averaging of the sequential scheme (the last `swa_last` global
+    versions, one per node turn of `local_epochs` epochs on that node's data). With 4 nodes, 2 local
+    epochs and swa_last 4 a snapshot is taken after every second node pass of the last 2 epochs, i.e.
+    every half epoch of the pooled data, as one sequential turn is. Default 0: the last weights."""
     device = torch.device(cfg.federation.device)
     # See client.py's run_node_round for why random/np.random are seeded
     # here too, not just torch.
@@ -61,9 +69,15 @@ def train_centralized_baseline(cfg: FedYoloConfig) -> dict:
     end2end = getattr(model, "end2end", False)
 
     step = 0
+    total_steps = total_epochs * sum(len(loader) for _, _, loader in node_loaders)
+    swa, swa_stride, swa_from = [], 1, total_epochs
+    if swa_last > 0:
+        span = min(cfg.federation.local_epochs, total_epochs)
+        swa_stride = max(1, len(node_loaders) * span // swa_last)
+        swa_from = total_epochs - span
     for epoch in range(total_epochs):
         log.info(f"=== centralized epoch {epoch + 1}/{total_epochs} ===")
-        for node, owned_ids, loader in node_loaders:
+        for pass_idx, (node, owned_ids, loader) in enumerate(node_loaders):
             model.class_weights = _class_mask(cfg.nc, owned_ids, device)
             # Force rebuild so the new mask is picked up. `= None` is not
             # enough for YOLOEModel: its own loss() checks `hasattr(self,
@@ -101,7 +115,8 @@ def train_centralized_baseline(cfg: FedYoloConfig) -> dict:
                 model.criterion = crit
             model.train()
             for batch in loader:
-                set_warmup_lr(optimizer, step, cfg.federation.warmup_steps, cfg.federation.lr0)
+                set_warmup_lr(optimizer, step, cfg.federation.warmup_steps, cfg.federation.lr0,
+                              schedule_factor(cfg, step / total_steps))
                 step += 1
                 batch["img"] = batch["img"].to(device).float() / 255.0
                 optimizer.zero_grad()
@@ -111,5 +126,18 @@ def train_centralized_baseline(cfg: FedYoloConfig) -> dict:
                 	model.parameters(), max_norm=cfg.federation.grad_clip
                 )
                 optimizer.step()
+            if swa_last > 0 and epoch >= swa_from:
+                p = (epoch - swa_from) * len(node_loaders) + pass_idx + 1
+                if p % swa_stride == 0:
+                    swa.append({k: v.detach().cpu().clone() for k, v in model.state_dict().items()})
+        if on_epoch_end is not None and on_epoch_end(epoch + 1, model):
+            break
 
+    if swa:
+        swa = swa[-swa_last:]
+        log.info(f"weight averaging: mean of the last {len(swa)} snapshots")
+        out = {}
+        for k, v in swa[-1].items():   # float tensors averaged (BatchNorm statistics too), integers from the last
+            out[k] = (sum(sd[k].float() for sd in swa) / len(swa)).to(v.dtype) if torch.is_floating_point(v) else v
+        return out
     return {k: v.detach().cpu() for k, v in model.state_dict().items()}

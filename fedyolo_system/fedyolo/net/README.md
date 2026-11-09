@@ -2,14 +2,18 @@
 
 Everything else in this project (`fedyolo.simulate`, `FedServer`,
 `AsyncFedServer`) runs a federation inside **one Python process**. This
-subsystem is additive, not a replacement: it runs the exact same
-config-driven federation as a real distributed system — a server process
-with a dashboard reachable by IP, and separate client processes — each
-with its own GUI ("personal room") — that pull the global model, train
-locally on their own machine's own dataset, and push results back over
-HTTP. `federation.mode` decides sync vs. async, same as everywhere else.
+subsystem runs the same config-driven federation as a real distributed
+system: a server process with a dashboard, and separate client processes
+(one per node, each with its own "personal room" page) that pull the global
+model, train on their own machine's data, and push their update back over
+HTTP or HTTPS. `federation.mode` decides sync vs. async, as everywhere else.
+Clients use the same local training (`run_node_round`) and the server the
+same merge code as the in-process runs.
 
-## Quick start — everything on one Mac (simulating N nodes)
+Scope: a few trusted machines on one local network (or over a VPN). It is
+not meant to be exposed to the internet.
+
+## Quick start — one machine, simulating N nodes
 
 ```bash
 python -m fedyolo.net.server_app --port 8900 [--config-dir configs]
@@ -18,98 +22,131 @@ python -m fedyolo.net.client_app --port 8902
 ```
 
 Open `http://127.0.0.1:8900` for the server dashboard. Create a room
-either **from a config file** (pick one from the dropdown — lists
-`--config-dir`, default `configs/`, with a preview) or **build one from
-scratch** (see "Dynamic rooms" below). The password needed by clients to
-join/push shows on the room card, with a refresh button.
+**from a config file** (dropdown of `--config-dir`, with a preview) or
+**from scratch** (dynamic, see below). The room password shows on the room
+card.
 
-Open `http://127.0.0.1:8901`, `8902`, ... for each client's own "personal
-room". Enter the server URL, room ID, and password, fetch the room, then
-(dynamic rooms only) declare your own classes. Point the dataset field at
-a local `data.yaml` — either browse to an existing one, or build one from
-a raw folder (the page illustrates the expected `images/{train,val}`,
-`labels/{train,val}` layout). Join — the server auto-assigns you the next
-free node slot, you don't pick one. Hit **Start federation** on the
-server once the nodes you want have joined, then **Start training** on
-each client.
+Open `http://127.0.0.1:8901`, `8902`, ... for each client. Enter the server
+URL, room ID and password, fetch the room, (dynamic rooms only) declare
+your classes, and point the dataset field at a local `data.yaml` (browse to
+one, or build one from a folder laid out as `images/{train,val}`,
+`labels/{train,val}`). Join — the server assigns the next free node slot.
+Press **Start federation** on the server once the nodes you want have
+joined, then **Start training** on each client.
 
-## Two Macs on the same Wi-Fi
+## Several machines on the same network
 
-Same as above, except: `server_app` already binds `0.0.0.0`, so it's
-reachable from the LAN automatically. On machine B, point `client_app`'s
-"Server URL" field at machine A's LAN IP (`http://192.168.x.x:8900`)
-instead of `127.0.0.1`. Each machine only ever needs local disk access to
-whichever node's data it's training.
+`server_app` binds `0.0.0.0`, so it is reachable on the LAN. On each client
+machine, set "Server URL" to the server's LAN address
+(`http://192.168.x.x:8900`). Each machine only needs its own node's data.
+One node per machine removes the one-GPU limit of the simulation: nodes
+really train at the same time, and async updates really arrive stale.
+
+## Security
+
+- **Admin actions** (dashboard, creating/deleting rooms, reading passwords,
+  checkpoints, rollback, shutdown) are allowed from the server machine
+  itself, or with the **admin token** printed at startup (also saved in
+  `<state-dir>/admin_token`, mode 600). A dashboard opened from another
+  machine asks for it once. Behind a reverse proxy on the same machine,
+  every request looks local: start with `--require-admin-token`.
+- **Nodes** need the room password **and** their own node token (issued at
+  join) for every call; one node can't act as another.
+- **Updates are plain tensors**: both sides load with
+  `torch.load(weights_only=True)`, so a peer can't execute code by sending
+  a crafted file. The server checks every update against the room's model
+  (same keys, shapes, no NaN/Inf), caps its size (`--max-upload-mb`, 2048),
+  and uses its own record of which classes each node owns.
+- A node's momentum buffers never leave its machine (smaller uploads).
+- **HTTPS**: `--ssl-certfile cert.pem --ssl-keyfile key.pem` on the server;
+  clients use `https://...` URLs. For a private/self-signed certificate,
+  start clients with `--ca-cert cert.pem`. Self-signed example:
+
+  ```bash
+  openssl req -x509 -newkey rsa:2048 -nodes -days 365 -subj "/CN=<server-ip>" \
+      -addext "subjectAltName=IP:<server-ip>" -keyout key.pem -out cert.pem
+  ```
+
+## Robustness
+
+- **Retries**: every client call is retried with back-off (2 s up to 60 s)
+  on network errors, timeouts or a restarting server; the node keeps going.
+- **Heartbeats**: clients report every 20 s while running. A node silent for
+  `--heartbeat-timeout` seconds (180) is marked `lost`.
+- **Sync rounds don't hang on a lost node**: once every missing node is
+  silent past the heartbeat timeout, the round is aggregated with the nodes
+  that reported; classes owned only by absent nodes keep their previous
+  weights. `--sync-round-timeout S` (> 0) additionally caps how long a
+  round waits even for a node that is still alive.
+- **Async rooms** finish once every node is done or gone.
+- **Idempotent uploads**: a retried push (same `push_id`) is answered from
+  the record, never aggregated twice.
+- **Reclaiming a node**: a client that was restarted can take its node back
+  by name ("Reclaim node" on the client page) once the old session has been
+  silent past the heartbeat timeout; the old token stops working.
+- **Dataset checks at join**: a `data.yaml` whose `path:` points to another
+  machine is repaired (a corrected copy in `~/.fedyolo_client/data/`; the
+  original is untouched) when its train/val folders sit next to it; class
+  names must match the node's classes exactly. Problems are reported at
+  join, not at the first training cycle.
+
+## Persistence
+
+Rooms, passwords, node tokens (hashed), counters, checkpoint history and
+unfinished sync rounds are saved under `--state-dir`
+(`runs/net_server_state`) after every change and restored at startup:
+restarting the server resumes every room, and connected clients carry on
+after their retries succeed. Not persisted: the async pull cache and the
+CA2FL cache (async rooms rebuild them as nodes submit).
+
+## Evaluation — developer mode only
+
+In real use the server never holds labeled data, so **server-side
+evaluation is off**. Starting the server with `--developer-mode` enables it
+(and warns at startup); rooms then evaluate every `eval_interval` rounds /
+submissions and at the end, in a background thread, against:
+
+1. a dataset path entered at room creation (the field only appears in
+   developer mode), else
+2. the config's own `eval_data_yaml`, else
+3. the nodes' validation splits, when the server can reach them (testing
+   everything on one machine).
 
 ## Static vs. dynamic rooms
 
-- **Static** — loaded from an existing config YAML, exactly like every
-  other run in this project: `nodes`/`global_classes` fixed and
+- **Static** — loaded from a config YAML: `nodes`/`global_classes` fixed and
   server-authoritative.
-- **Dynamic** — built from scratch with just a class ceiling
-  (`max_classes`), model arch/imgsz, and federation hyperparameters. No
-  predefined nodes or classes: each client declares its own class names
-  on join; the server assigns global ids in order of first appearance
-  across registrations, reusing an id if another node already claimed
-  that name. **Sync** dynamic rooms freeze the node/class set the moment
-  you hit Start (a barrier needs a fixed, known participant set); **async**
-  ones stay open indefinitely — a new node can join mid-run, and an
-  already-joined node can declare *more* classes between cycles via the
-  client page's "declare more classes" field. A class added late starts
-  training from its untouched random init — it simply needs its own
-  rounds/cycles to catch up, same as it would centralized. Because async
-  dynamic rooms have no fixed participant set, they never auto-finish —
-  close one explicitly with the server dashboard's **Finish room** button
-  when you're done.
+- **Dynamic** — built with a class ceiling (`max_classes`), model arch/imgsz
+  and federation hyperparameters. Each client declares its class names on
+  join; global ids are assigned in order of first appearance. **Sync**
+  dynamic rooms freeze the node/class set at Start; **async** ones stay open
+  (new nodes can join, nodes can declare more classes between cycles) and
+  never auto-finish — close them with **Finish room**.
 
 ## Checkpoints
 
-Every round (sync) / submission (async) is checkpointed, named by
-timestamp + room id, with the last **10** kept per room (older ones
-auto-pruned — this project has hit real "No space left on device" crashes
-from unbounded retention before). The server dashboard lists them per
-room: **Serve this** non-destructively pins which checkpoint new `/pull`
-calls hand out (training keeps going on the live state regardless);
-**Rollback here** is destructive — resets the room's live state to that
-checkpoint and deletes everything newer, for undoing a bad stretch of
-training.
+Every round (sync) / submission (async) is checkpointed, last **10** kept
+per room. **Serve this** pins which checkpoint new pulls receive, without
+touching training; **Rollback here** resets the room's live state to that
+checkpoint and deletes everything newer.
 
-## Server-side eval
+## Merge rules and training options
 
-Static rooms keep the same eval fedyolo.simulate always does (pools each
-node's own local val split — the server has that on disk in every setup
-this project has actually run). Dynamic rooms have no such local access
-by default (the whole point is that data stays on each client's own
-machine); pass an **eval dataset yaml** at room creation only if the
-server operator happens to have one it can reach, and eval runs against
-that instead. Left blank, eval is skipped cleanly rather than assumed.
-
-## What's real vs. simplified here
-
-- Sync and async both reuse the exact aggregation code the in-process
-  path uses (`fedyolo.model.aggregate`, `AsyncFedServer`), including for
-  dynamic rooms — `aggregate_per_class`'s own docstring already handles
-  "classes with zero contributing nodes" (an as-yet-unclaimed slot) by
-  keeping them at random init, so no core aggregation changes were
-  needed.
-- Pseudo-labeling isn't wired through the network protocol — every
-  config in this project has it disabled.
-- Password auth is a shared secret per room (required for join/push, not
-  for pull), appropriate for a trusted local network. No TLS. Scoped
-  deliberately to "one Mac, or a couple on the same Wi-Fi" — the natural
-  next step before ever exposing this beyond a LAN.
-- The local file-browser endpoint (`client_app`'s `/api/browse`) is safe
-  specifically because `client_app` binds `127.0.0.1` by default — one
-  user, one machine, never exposed to the network.
+Sync rooms pass every merge option of the config through (`merge_rule`
+mean/ties/fisher, `normalize_steps`, `weight_basis`); async rooms use
+`AsyncFedServer` itself (`async_rule`, `async_mix`, CA2FL/FedBuff).
+Pseudo-labeling works as in the simulation: the teacher is the previous
+round's global model (sync) or the pulled model (async).
 
 ## Layout
 
-- `rooms.py` — `Room`: static/dynamic config handling, node/class
-  registration, the sync round barrier, checkpoint history + rollback,
-  password, and a thin wrapper over `AsyncFedServer` for async.
-- `server_app.py` — FastAPI app: room registry (list/create/delete),
-  config browsing, checkpoint endpoints, REST + WebSocket protocol, the
-  server dashboard (`static/server_dashboard.html`), shutdown.
-- `client_app.py` — FastAPI app: one node's local pull→train→push loop,
-  local file browser + dataset builder, the "personal room" GUI
-  (`static/client_dashboard.html`), shutdown.
+- `protocol.py` — wire format: encode/decode the global model and node
+  updates (plain tensors, `weights_only=True`, validation).
+- `rooms.py` — `Room`: static/dynamic config, node registry and tokens,
+  sync barrier with lost-node handling, async wrapper over
+  `AsyncFedServer`, checkpoints/rollback, persistence, developer-mode eval.
+- `server_app.py` — FastAPI server: admin/node auth, REST + WebSocket,
+  dashboard (`static/server_dashboard.html`), HTTPS, startup restore.
+- `client_app.py` — FastAPI client: one node's pull→train→push loop with
+  retries and heartbeats, dataset checks, the personal-room page
+  (`static/client_dashboard.html`).

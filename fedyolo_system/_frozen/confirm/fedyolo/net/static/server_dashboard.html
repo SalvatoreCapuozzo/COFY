@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fedyolo — federation server</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1d212a; --border: #2a2f3a; --ink: #e6e9ef;
+    --muted: #8b93a3; --accent: #5b8cff; --good: #35c98f; --warn: #e8b339;
+    --bad: #e8555a; --mono: 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 -apple-system, 'Segoe UI', sans-serif; }
+  header { padding: 14px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  header .sub { color: var(--muted); font-size: 12.5px; font-family: var(--mono); }
+  header button.stop { margin-left: auto; background: var(--bad); border: none; color: white;
+    border-radius: 6px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; min-height: calc(100vh - 53px); }
+  .sidebar { border-right: 1px solid var(--border); padding: 16px; }
+  .sidebar h3 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--muted); margin: 0 0 10px; }
+  .room-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px;
+    margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+  .room-item:hover { background: var(--panel2); }
+  .room-item.active { background: #23304a; }
+  .room-item .mode-chip { font-size: 10px; padding: 1px 6px; border-radius: 100px;
+    background: var(--panel2); color: var(--muted); }
+  main { padding: 20px 28px 60px; max-width: 980px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 18px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--muted); margin: 0 0 14px; font-weight: 600; }
+  label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+  input, select, textarea { width: 100%; background: #0d0f14; border: 1px solid var(--border); color: var(--ink);
+    border-radius: 6px; padding: 8px 10px; font-size: 13.5px; font-family: var(--mono); }
+  textarea { min-height: 220px; resize: vertical; }
+  .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 140px; }
+  button { background: var(--accent); color: white; border: none; border-radius: 6px;
+    padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; margin-right: 8px; }
+  button:hover { filter: brightness(1.1); }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--ink); }
+  button.danger { background: var(--bad); }
+  button:disabled { opacity: .5; cursor: default; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tab { padding: 6px 12px; border-radius: 6px; font-size: 12.5px; cursor: pointer; color: var(--muted); }
+  .tab.active { background: var(--panel2); color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .03em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 12.5px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+  .badge.unclaimed { background: #2a2f3a; color: var(--muted); }
+  .badge.idle { background: #2a2f3a; color: var(--ink); }
+  .badge.downloading, .badge.training, .badge.uploading, .badge.waiting { background: #2a3a52; color: var(--accent); }
+  .badge.done { background: #163d30; color: var(--good); }
+  .badge.lost { background: #3d1a1a; color: #f87171; }
+  .stat { display: flex; gap: 24px; flex-wrap: wrap; }
+  .stat .v { font-size: 20px; font-weight: 700; font-family: var(--mono); }
+  .stat .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  #log { height: 200px; overflow-y: auto; background: #0d0f14; border-radius: 6px;
+    padding: 10px 12px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  #log div.ev-eval_result { color: var(--good); }
+  #log div.ev-node_joined, #log div.ev-classes_added { color: var(--accent); }
+  #log div.ev-room_finished { color: var(--warn); font-weight: 700; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .empty { color: var(--muted); font-style: italic; padding: 16px 0; text-align: center; }
+  .pw-row { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 13px; }
+  .pw-row code { background: #0d0f14; padding: 4px 10px; border-radius: 6px; letter-spacing: .04em; }
+  .chip-btn { display: inline-block; padding: 4px 10px; border-radius: 100px; font-size: 11.5px;
+    border: 1px solid var(--border); cursor: pointer; margin-right: 6px; margin-bottom: 6px; }
+  .chip-btn.active { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>fedyolo &middot; federation server</h1>
+  <span class="sub" id="host-hint"></span>
+  <button class="stop" onclick="stopServer()">Stop server</button>
+</header>
+<div class="layout">
+  <div class="sidebar">
+    <h3>Rooms</h3>
+    <div id="room-list"></div>
+    <button class="secondary" style="width:100%;margin-top:10px" onclick="showCreatePanel()">+ New room</button>
+  </div>
+
+  <main>
+    <div id="create-panel" class="card">
+      <h2>Create a room</h2>
+      <div class="tabs">
+        <div class="tab active" data-tab="static" onclick="switchCreateTab('static')">From a config file</div>
+        <div class="tab" data-tab="dynamic" onclick="switchCreateTab('dynamic')">Build from scratch</div>
+      </div>
+
+      <div id="tab-static">
+        <div class="row">
+          <div><label>Room ID</label><input id="s-room-id" value="demo"></div>
+          <div style="flex:2">
+            <label>Config</label>
+            <select id="s-config-select" onchange="previewConfig()"></select>
+          </div>
+        </div>
+        <label>Preview</label>
+        <textarea id="s-config-preview" readonly></textarea>
+        <div class="dev-only" style="display:none;margin-top:10px">
+          <label>Evaluation dataset yaml on this server (developer mode; blank = the config's own eval set, else the nodes' validation data if reachable)</label>
+          <input id="s-eval-yaml" placeholder="/path/to/eval/data.yaml">
+        </div>
+        <div style="margin-top:12px"><button onclick="createStaticRoom()">Create room</button></div>
+      </div>
+
+      <div id="tab-dynamic" style="display:none">
+        <p class="hint" style="margin-top:0">No predefined nodes or classes — clients declare their own classes when they join, up to the ceiling below. Sync rooms freeze the class/node set once you hit Start; async rooms stay open to new nodes and new classes indefinitely.</p>
+        <div class="row">
+          <div><label>Room ID</label><input id="d-room-id" value="dynamic1"></div>
+          <div><label>Mode</label><select id="d-mode"><option value="sync">sync</option><option value="async">async</option></select></div>
+          <div><label>Max classes</label><input id="d-max-classes" type="number" value="20"></div>
+        </div>
+        <div class="row">
+          <div><label>Model arch</label><input id="d-arch" value="yolov8n.yaml"></div>
+          <div><label>Image size</label><input id="d-imgsz" type="number" value="640"></div>
+          <div><label>Local epochs</label><input id="d-local-epochs" type="number" value="2"></div>
+          <div><label>Batch size</label><input id="d-batch" type="number" value="8"></div>
+        </div>
+        <div class="row">
+          <div id="d-rounds-wrap"><label>Rounds (sync)</label><input id="d-rounds" type="number" value="10"></div>
+          <div id="d-cycles-wrap" style="display:none"><label>Cycles per node (async)</label><input id="d-cycles" type="number" value="10"></div>
+          <div><label>Eval interval</label><input id="d-eval-interval" type="number" value="2"></div>
+          <div><label>LR0</label><input id="d-lr0" type="number" step="0.0001" value="0.0008"></div>
+        </div>
+        <div class="row dev-only" style="display:none">
+          <div style="flex:2"><label>Evaluation dataset yaml on this server (developer mode only)</label><input id="d-eval-yaml" placeholder="leave blank to skip server-side eval"></div>
+        </div>
+        <button onclick="createDynamicRoom()">Create room</button>
+      </div>
+    </div>
+
+    <div id="room-view" style="display:none">
+      <div class="card">
+        <h2>Room <span id="room-id-label"></span> <span class="badge idle" id="room-type-badge"></span></h2>
+        <div class="stat">
+          <div><div class="v" id="stat-mode">—</div><div class="l">Mode</div></div>
+          <div><div class="v" id="stat-progress">—</div><div class="l">Round / Version</div></div>
+          <div><div class="v" id="stat-status">—</div><div class="l">Status</div></div>
+        </div>
+        <div class="pw-row" style="margin-top:14px">
+          <span class="hint" style="margin:0">Password (share it with the node operators; needed to join, download and upload):</span>
+          <code id="room-password">—</code>
+          <button class="secondary" style="padding:4px 10px;font-size:11.5px" onclick="refreshPassword()">Refresh</button>
+        </div>
+        <div style="margin-top:14px">
+          <button id="start-btn" onclick="startRoom()">Start federation</button>
+          <button id="finish-btn" class="secondary" onclick="finishRoom()" style="display:none">Finish room</button>
+          <button id="delete-btn" class="danger" onclick="deleteRoom()">Delete room</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Nodes <span class="hint" id="claimed-classes-hint"></span></h2>
+        <table>
+          <thead><tr><th>Node</th><th>Status</th><th>Round/Cycle</th><th>Classes</th><th>IP</th></tr></thead>
+          <tbody id="nodes-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Checkpoint history <span class="hint">last 10 kept, auto-pruned</span></h2>
+        <table>
+          <thead><tr><th>Marker</th><th>Label</th><th>Created</th><th>Serving</th><th></th></tr></thead>
+          <tbody id="ckpt-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Eval history</h2>
+        <table>
+          <thead><tr><th>Label</th><th>mAP50</th><th>mAP50-95</th></tr></thead>
+          <tbody id="eval-body"><tr><td colspan="3" class="empty">no evals yet</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Live events</h2>
+        <div id="log"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let currentRoom = null;
+let ws = null;
+$("host-hint").textContent = location.host;
+
+function adminToken() { try { return localStorage.getItem("fedyolo_admin_token") || ""; } catch (e) { return ""; } }
+async function api(path, opts, retried) {
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers || {}, {"X-Admin-Token": adminToken()});
+  const r = await fetch(path, opts);
+  if (r.status === 403 && !retried) {
+    const t = await r.text();
+    if (t.includes("admin access")) {
+      const tok = prompt("This dashboard is opened from another machine. Enter the admin token printed when the server started:");
+      if (tok) { try { localStorage.setItem("fedyolo_admin_token", tok.trim()); } catch (e) {} return api(path, opts, true); }
+    }
+    throw new Error(t);
+  }
+  if (!r.ok) { const t = await r.text(); throw new Error(t); }
+  return r.json();
+}
+let DEV_MODE = false;
+fetch("/api/info").then(r => r.json()).then(i => {
+  DEV_MODE = !!i.developer_mode;
+  document.querySelectorAll(".dev-only").forEach(e => e.style.display = DEV_MODE ? "block" : "none");
+}).catch(() => {});
+
+async function refreshRoomList() {
+  const data = await api("/api/rooms");
+  $("room-list").innerHTML = data.rooms.map(r => `
+    <div class="room-item ${r.room_id === currentRoom ? 'active' : ''}" onclick="openRoomById('${r.room_id}')">
+      <span>${r.room_id}</span>
+      <span class="mode-chip">${r.mode}${r.dynamic ? '·dyn' : ''}</span>
+    </div>`).join("") || `<div class="hint">no rooms yet</div>`;
+}
+
+function showCreatePanel() {
+  currentRoom = null;
+  $("create-panel").style.display = "block";
+  $("room-view").style.display = "none";
+  refreshRoomList();
+  loadConfigList();
+}
+
+function switchCreateTab(tab) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+  $("tab-static").style.display = tab === "static" ? "block" : "none";
+  $("tab-dynamic").style.display = tab === "dynamic" ? "block" : "none";
+}
+
+$("d-mode").addEventListener("change", () => {
+  const sync = $("d-mode").value === "sync";
+  $("d-rounds-wrap").style.display = sync ? "block" : "none";
+  $("d-cycles-wrap").style.display = sync ? "none" : "block";
+});
+
+async function loadConfigList() {
+  const data = await api("/api/configs");
+  $("s-config-select").innerHTML = data.configs.map(c => `<option value="${c}">${c}</option>`).join("");
+  if (data.configs.length) previewConfig();
+}
+
+async function previewConfig() {
+  const name = $("s-config-select").value;
+  if (!name) return;
+  const data = await api(`/api/configs/${name}`);
+  $("s-config-preview").value = data.text;
+}
+
+async function createStaticRoom() {
+  const room_id = $("s-room-id").value.trim();
+  const config_name = $("s-config-select").value;
+  const body = {room_id, config_name};
+  if (DEV_MODE && $("s-eval-yaml").value.trim()) body.eval_data_yaml = $("s-eval-yaml").value.trim();
+  try {
+    await api("/api/rooms", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body)});
+    openRoomById(room_id);
+  } catch (e) { alert("Could not create room: " + e.message); }
+}
+
+async function createDynamicRoom() {
+  const room_id = $("d-room-id").value.trim();
+  const mode = $("d-mode").value;
+  const federation = {
+    mode, local_epochs: +$("d-local-epochs").value, batch_size: +$("d-batch").value,
+    eval_interval: +$("d-eval-interval").value, lr0: +$("d-lr0").value,
+  };
+  if (mode === "sync") federation.rounds = +$("d-rounds").value;
+  else federation.async_node_cycles = +$("d-cycles").value;
+  const dynamic_spec = {
+    max_classes: +$("d-max-classes").value,
+    model: {arch: $("d-arch").value, imgsz: +$("d-imgsz").value},
+    federation,
+    eval_data_yaml: DEV_MODE ? ($("d-eval-yaml").value.trim() || null) : null,
+  };
+  try {
+    await api("/api/rooms", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({room_id, dynamic: true, dynamic_spec})});
+    openRoomById(room_id);
+  } catch (e) { alert("Could not create room: " + e.message); }
+}
+
+async function openRoomById(room_id) {
+  try {
+    const snap = await api(`/api/rooms/${room_id}`);
+    currentRoom = room_id;
+    $("create-panel").style.display = "none";
+    $("room-view").style.display = "block";
+    $("room-id-label").textContent = room_id;
+    render(snap);
+    refreshRoomList();
+    refreshPassword();
+    refreshCheckpoints();
+    connectWs(room_id);
+  } catch (e) { alert("Could not open room: " + e.message); }
+}
+
+async function startRoom() { await api(`/api/rooms/${currentRoom}/start`, {method: "POST"}); }
+async function finishRoom() { await api(`/api/rooms/${currentRoom}/finish`, {method: "POST"}); }
+
+async function deleteRoom() {
+  if (!confirm(`Delete room "${currentRoom}"?`)) return;
+  try {
+    await api(`/api/rooms/${currentRoom}`, {method: "DELETE"});
+    showCreatePanel();
+  } catch (e) { alert("Could not delete: " + e.message); }
+}
+
+async function refreshPassword() {
+  const data = await api(`/api/rooms/${currentRoom}/password`);
+  $("room-password").textContent = data.password;
+}
+
+async function refreshCheckpoints() {
+  const snap = await api(`/api/rooms/${currentRoom}`);
+  const data = await api(`/api/rooms/${currentRoom}/checkpoints`);
+  const serving = snap.serving_checkpoint;
+  $("ckpt-body").innerHTML = data.checkpoints.slice().reverse().map(c => `
+    <tr>
+      <td>${c.marker}</td><td>${c.label}</td>
+      <td>${new Date(c.created * 1000).toLocaleTimeString()}</td>
+      <td>${serving === c.path ? '<span class="badge done">pinned</span>' : (!serving && c === data.checkpoints[data.checkpoints.length-1] ? '<span class="badge idle">latest (live)</span>' : '')}</td>
+      <td>
+        <span class="chip-btn" onclick="serveCheckpoint('${c.path}')">Serve this</span>
+        <span class="chip-btn" onclick="serveCheckpoint(null)">Serve live</span>
+        <span class="chip-btn" style="color:var(--bad)" onclick="rollback('${c.path}', ${c.marker})">Rollback here</span>
+      </td>
+    </tr>`).join("") || `<tr><td colspan="5" class="empty">no checkpoints yet</td></tr>`;
+}
+
+async function serveCheckpoint(path) {
+  await api(`/api/rooms/${currentRoom}/checkpoints/serve`, {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({path})});
+  refreshCheckpoints();
+}
+
+async function rollback(path, marker) {
+  if (!confirm(`Roll back to marker ${marker}? This deletes every checkpoint after it and resets the room's live state.`)) return;
+  await api(`/api/rooms/${currentRoom}/checkpoints/rollback`, {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({path})});
+  refreshCheckpoints();
+  api(`/api/rooms/${currentRoom}`).then(render);
+}
+
+function statusBadge(s) { return `<span class="badge ${s}">${s}</span>`; }
+
+function render(snap) {
+  $("room-type-badge").textContent = snap.dynamic ? `dynamic · max ${snap.max_classes} classes` : "static";
+  $("stat-mode").textContent = snap.mode;
+  $("stat-progress").textContent = `${snap.round} / ${snap.total ?? "open"}`;
+  $("stat-status").textContent = snap.finished ? "finished" : (snap.started ? "running" : "waiting to start");
+  $("start-btn").disabled = snap.started;
+  $("finish-btn").style.display = (snap.dynamic && snap.mode === "async" && !snap.finished) ? "inline-block" : "none";
+  $("delete-btn").disabled = !snap.deletable;
+  $("claimed-classes-hint").textContent = snap.claimed_classes.length
+    ? `— claimed: ${snap.claimed_classes.join(", ")}` : "";
+
+  const rows = Object.values(snap.nodes).map(n => `
+    <tr>
+      <td>${n.name}</td>
+      <td>${statusBadge(n.status)}</td>
+      <td>${n.round_or_cycle}</td>
+      <td>${(n.owned_classes || []).join(", ") || "—"}</td>
+      <td>${n.ip ?? "—"}</td>
+    </tr>`).join("");
+  $("nodes-body").innerHTML = rows || `<tr><td colspan="5" class="empty">no nodes connected yet</td></tr>`;
+
+  if (snap.eval_history && snap.eval_history.length) {
+    $("eval-body").innerHTML = snap.eval_history.map(e =>
+      `<tr><td>${e.label}</td><td>${(e.map50 ?? 0).toFixed(3)}</td><td>${(e["map50-95"] ?? e.map5095 ?? 0).toFixed(3)}</td></tr>`
+    ).join("");
+  }
+}
+
+function logLine(ev) {
+  const div = document.createElement("div");
+  div.className = "ev-" + ev.kind;
+  const t = new Date(ev.ts * 1000).toLocaleTimeString();
+  const rest = Object.entries(ev).filter(([k]) => k !== "ts" && k !== "kind")
+    .map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(" ");
+  div.textContent = `[${t}] ${ev.kind} ${rest}`;
+  $("log").appendChild(div);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
+function connectWs(room_id) {
+  if (ws) ws.close();
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}/ws/${room_id}?admin_token=${encodeURIComponent(adminToken())}`);
+  ws.onmessage = (msg) => {
+    const ev = JSON.parse(msg.data);
+    if (ev.kind === "snapshot") { render(ev); return; }
+    logLine(ev);
+    api(`/api/rooms/${room_id}`).then(render).catch(() => {});
+    if (ev.kind === "round_advanced" || ev.kind === "async_submitted" || ev.kind === "room_rolled_back") {
+      refreshCheckpoints();
+    }
+  };
+  ws.onclose = () => setTimeout(() => { if (currentRoom === room_id) connectWs(room_id); }, 2000);
+}
+
+async function stopServer() {
+  if (!confirm("Stop the server process? Rooms are saved and resume when the server starts again.")) return;
+  await fetch("/api/shutdown", {method: "POST", headers: {"X-Admin-Token": adminToken()}}).catch(() => {});
+  document.body.innerHTML = "<div style='padding:40px;font-family:monospace'>Server stopped.</div>";
+}
+
+refreshRoomList();
+loadConfigList();
+const roomInUrl = location.pathname.match(/^\/room\/([^/]+)/);
+if (roomInUrl) openRoomById(decodeURIComponent(roomInUrl[1]));
+</script>
+</body>
+</html>

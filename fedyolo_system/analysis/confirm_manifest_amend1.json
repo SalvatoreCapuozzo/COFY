@@ -1,0 +1,40 @@
+{
+ "amendment": 1,
+ "dataset": "dentex",
+ "written": "2026-11-01 10:50:13 CET",
+ "pilot": {
+  "budget_epochs": 5,
+  "best_map50": 0.9581883855596149
+ },
+ "budget": {
+  "epochs": 20,
+  "set_by": "amendment 3",
+  "rounds": 10,
+  "epochs_trained": 20
+ },
+ "labels_sha256": "bf284cd77862edcb8a90315862518fba7a8b59946668f0d8be1e844b5b018b60",
+ "images_list_sha256": "bb0c1edb12bb3619dabdde541f493c7460a789312a59ae7cd766f0a93eb89bc4",
+ "sha256": {
+  "configs/variants/v2_central/dentex_s0.yaml": "4fe70eb652a98ed07cdb449ba36891abb93c26f688c71eb2f8faf619ef93626c",
+  "configs/variants/confirm_v2sync/dentex_s100.yaml": "b87117d8f661d221c9dc3224d08c0fbc46ab6a925e6775791786a6bbf8be1c12",
+  "configs/variants/confirm_v2sync/dentex_s101.yaml": "b88ff2b5936c949313b6cd5521ec135a77e339838e8eddaaaf5ff3a235a9c1a1",
+  "configs/variants/confirm_v2sync/dentex_s102.yaml": "876580758d8714f3e198eeaad391b4544cea7c4d7421963254a1543ee1b0ae6e",
+  "configs/variants/confirm_v2sync/dentex_s103.yaml": "9110b5bb52306404c956f6b8748ab0d2b2247e58e988d4a18380ebe7258366aa",
+  "configs/variants/confirm_v2sync/dentex_s104.yaml": "7dd764d5bbf744287fdb13d38452f32f5858c922f30910867a699dd878799e69",
+  "configs/variants/confirm_v2sync/dentex_s105.yaml": "cc777e3c934423069bc3296a969fc4d8b60a15f4cca6ad9602b8bd74da2eca05",
+  "configs/variants/confirm_v2sync/dentex_s106.yaml": "1b05f293ab8f13556a3bfc8f2976952944673580c15d6ab53b545fe81fd10535",
+  "configs/variants/confirm_v2sync/dentex_s107.yaml": "cb05cd9be74d8351308954c68a112916177db95e71e4a1e20c11c23b0f9c460b",
+  "configs/variants/confirm_v2sync/dentex_s108.yaml": "8ce085e16ea49552e612a340415ad3a5747d9ad8345f768eabea60a95759e03b",
+  "configs/variants/confirm_v2sync/dentex_s109.yaml": "0f12245146a6e32d9bccb4bf98e7e676bd253b0c45112bc8f3ff864a940e2267",
+  "configs/variants/confirm_v2async/dentex_s100.yaml": "1ae03049896854f77e05fa8143b0fd973a1e7e34400fa1a8cca307b17674e749",
+  "configs/variants/confirm_v2async/dentex_s101.yaml": "7daa9db7526f5152e4c83b25fa8db9e2831c3a7847377620db545c8022af32a7",
+  "configs/variants/confirm_v2async/dentex_s102.yaml": "dc19e3808d240440a50e237500b94b80bb99425fa7d8d33010f0fced71d31049",
+  "configs/variants/confirm_v2async/dentex_s103.yaml": "cbb7cc429d4e0b961869d59548a3b82c0b84b70f19c8a6fe6756055ab5fac726",
+  "configs/variants/confirm_v2async/dentex_s104.yaml": "4d2e2bc661560a7e49f65f0fddb5bda5854decd91d404c8593e9db07f14bce7e",
+  "configs/variants/confirm_v2async/dentex_s105.yaml": "1a14bc2acc7f5199c7c5c652aa63397f49b666980a78d9cc2c8acb862abc1337",
+  "configs/variants/confirm_v2async/dentex_s106.yaml": "662adcaf7aa05ea7991eaa40d50f9126f74fbff541d194dc29074d2dd6ad4ba3",
+  "configs/variants/confirm_v2async/dentex_s107.yaml": "21aa2fb2324020f09e68e2583e83e9e00e2562127ba4ef8c8a891e15e6cb7997",
+  "configs/variants/confirm_v2async/dentex_s108.yaml": "3178a664dc5702de8ab3361ae7159c8581db96a3d4fab631e0559607db8771a2",
+  "configs/variants/confirm_v2async/dentex_s109.yaml": "26ed46cfcbc9eea5a438035f00d066856d9a9b4f6fa6dd111e7456caab137871"
+ }
+}

@@ -62,7 +62,8 @@ def _run_one_federated_mode(cfg: FedYoloConfig, mode: str, args, console, log) -
     `global_final.pt`, for instance). Returns the small metrics dict that
     goes under summary["federated_sync"] / summary["federated_async"].
     """
-    sub_cfg = dataclasses.replace(cfg, output_dir=str(Path(cfg.output_dir) / mode))
+    sub_cfg = dataclasses.replace(cfg, output_dir=str(Path(cfg.output_dir) / mode),
+                                  federation=dataclasses.replace(cfg.federation, mode=mode))
     Path(sub_cfg.output_dir).mkdir(parents=True, exist_ok=True)
 
     if mode == "async":
