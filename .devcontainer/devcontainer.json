@@ -1,0 +1,15 @@
+{
+  "name": "COFY demo",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "hostRequirements": { "cpus": 4, "memory": "16gb" },
+  "postCreateCommand": "pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch torchvision && pip install --no-cache-dir -r fedyolo_system/requirements.txt 'ultralytics==8.4.84'",
+  "forwardPorts": [8900, 8901, 8902, 8903, 8904],
+  "portsAttributes": {
+    "8900": { "label": "server dashboard", "onAutoForward": "openBrowser" },
+    "8901": { "label": "client node_A" },
+    "8902": { "label": "client node_B" },
+    "8903": { "label": "client node_C" },
+    "8904": { "label": "client node_D" }
+  },
+  "customizations": { "codespaces": { "openFiles": ["fedyolo_system/demo/README.md"] } }
+}

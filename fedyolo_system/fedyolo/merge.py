@@ -155,13 +155,17 @@ def step_scales(weights: list[float], node_steps: list[float] | None) -> list[fl
 
 def merge_shared(node_state_dicts: list[dict], weights: list[float], keys: list[str],
                  prev_global: dict | None, rule: str = "mean",
-                 trim: float = 0.2, node_steps: list[float] | None = None) -> dict:
+                 trim: float = 0.2, node_steps: list[float] | None = None,
+                 node_fishers: list[dict] | None = None, fisher_damping: float = 0.01) -> dict:
     """Combine the shared keys. `rule="mean"` with no `node_steps` reproduces
     the original sample-weighted FedAvg exactly; `rule="ties"` and FedNova step
     normalization both need `prev_global` to form deltas, and are skipped if it
     isn't available."""
     if prev_global is None:
         rule, node_steps = ("mean" if rule == "ties" else rule), None
+
+    if rule == "fisher":
+        return _merge_fisher(node_state_dicts, weights, keys, node_fishers, fisher_damping)
 
     scales = step_scales(weights, node_steps)
     total = sum(weights)
@@ -211,4 +215,48 @@ def merge_shared(node_state_dicts: list[dict], weights: list[float], keys: list[
         # coords where nothing agreed (or the election tied at zero) don't move
         merged = torch.where(denom > 0, merged, torch.zeros_like(merged))
         out[k] = (base + merged).to(ref.dtype)
+    return out
+
+
+def _merge_fisher(node_state_dicts: list[dict], weights: list[float], keys: list[str],
+                  node_fishers: list[dict] | None, damping: float) -> dict:
+    """Diagonal Fisher-weighted merge (diagonal case of FIPA, arXiv 2601.13608;
+    FedFisher, AISTATS 2024). Per coordinate i:
+
+        theta_i = sum_k N_k (F_k,i + eps) theta_k,i / sum_k N_k (F_k,i + eps)
+
+    F_k = node k's mean squared local gradient (client.py), N_k = its sample
+    weight, eps = damping x the N-weighted mean Fisher over all shared
+    coordinates. Weights sum to 1 per coordinate, so the update magnitude stays
+    FedAvg-like; where no node's Fisher is informative it reduces to FedAvg.
+    Keys without a Fisher (BN running stats, counters) use plain FedAvg."""
+    if not node_fishers or any(f is None for f in node_fishers):
+        raise ValueError("merge_rule='fisher' needs every node's Fisher (NodeRoundResult.fisher)")
+    total = sum(weights)
+    num, cnt = 0.0, 0
+    for k in keys:
+        if all(k in f for f in node_fishers):
+            num += sum(w * f[k].double().sum().item() for f, w in zip(node_fishers, weights)) / total
+            cnt += node_fishers[0][k].numel()
+    eps = damping * (num / max(cnt, 1)) + 1e-30
+
+    out = {}
+    for k in keys:
+        ref = node_state_dicts[0][k]
+        if not torch.is_floating_point(ref):
+            out[k] = node_state_dicts[weights.index(max(weights))][k]
+            continue
+        if not all(k in f for f in node_fishers):
+            acc = torch.zeros_like(ref, dtype=torch.float32)
+            for sd, w in zip(node_state_dicts, weights):
+                acc += sd[k].to(torch.float32) * (w / total)
+            out[k] = acc.to(ref.dtype)
+            continue
+        num_k = torch.zeros_like(ref, dtype=torch.float32)
+        den_k = torch.zeros_like(ref, dtype=torch.float32)
+        for sd, f, w in zip(node_state_dicts, node_fishers, weights):
+            a = w * (f[k].to(torch.float32) + eps)
+            num_k += a * sd[k].to(torch.float32)
+            den_k += a
+        out[k] = (num_k / den_k).to(ref.dtype)
     return out

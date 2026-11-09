@@ -59,6 +59,7 @@
   .badge.idle { background: #2a2f3a; color: var(--ink); }
   .badge.downloading, .badge.training, .badge.uploading, .badge.waiting { background: #2a3a52; color: var(--accent); }
   .badge.done { background: #163d30; color: var(--good); }
+  .badge.lost { background: #3d1a1a; color: #f87171; }
   .stat { display: flex; gap: 24px; flex-wrap: wrap; }
   .stat .v { font-size: 20px; font-weight: 700; font-family: var(--mono); }
   .stat .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
@@ -107,6 +108,10 @@
         </div>
         <label>Preview</label>
         <textarea id="s-config-preview" readonly></textarea>
+        <div class="dev-only" style="display:none;margin-top:10px">
+          <label>Evaluation dataset yaml on this server (developer mode; blank = the config's own eval set, else the nodes' validation data if reachable)</label>
+          <input id="s-eval-yaml" placeholder="/path/to/eval/data.yaml">
+        </div>
         <div style="margin-top:12px"><button onclick="createStaticRoom()">Create room</button></div>
       </div>
 
@@ -129,8 +134,8 @@
           <div><label>Eval interval</label><input id="d-eval-interval" type="number" value="2"></div>
           <div><label>LR0</label><input id="d-lr0" type="number" step="0.0001" value="0.0008"></div>
         </div>
-        <div class="row">
-          <div style="flex:2"><label>Eval dataset yaml (optional — server needs local access to it)</label><input id="d-eval-yaml" placeholder="leave blank to skip server-side eval"></div>
+        <div class="row dev-only" style="display:none">
+          <div style="flex:2"><label>Evaluation dataset yaml on this server (developer mode only)</label><input id="d-eval-yaml" placeholder="leave blank to skip server-side eval"></div>
         </div>
         <button onclick="createDynamicRoom()">Create room</button>
       </div>
@@ -145,7 +150,7 @@
           <div><div class="v" id="stat-status">—</div><div class="l">Status</div></div>
         </div>
         <div class="pw-row" style="margin-top:14px">
-          <span class="hint" style="margin:0">Password (needed by clients to join/push, not to pull):</span>
+          <span class="hint" style="margin:0">Password (share it with the node operators; needed to join, download and upload):</span>
           <code id="room-password">—</code>
           <button class="secondary" style="padding:4px 10px;font-size:11.5px" onclick="refreshPassword()">Refresh</button>
         </div>
@@ -194,11 +199,27 @@ let currentRoom = null;
 let ws = null;
 $("host-hint").textContent = location.host;
 
-async function api(path, opts) {
+function adminToken() { try { return localStorage.getItem("fedyolo_admin_token") || ""; } catch (e) { return ""; } }
+async function api(path, opts, retried) {
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers || {}, {"X-Admin-Token": adminToken()});
   const r = await fetch(path, opts);
+  if (r.status === 403 && !retried) {
+    const t = await r.text();
+    if (t.includes("admin access")) {
+      const tok = prompt("This dashboard is opened from another machine. Enter the admin token printed when the server started:");
+      if (tok) { try { localStorage.setItem("fedyolo_admin_token", tok.trim()); } catch (e) {} return api(path, opts, true); }
+    }
+    throw new Error(t);
+  }
   if (!r.ok) { const t = await r.text(); throw new Error(t); }
   return r.json();
 }
+let DEV_MODE = false;
+fetch("/api/info").then(r => r.json()).then(i => {
+  DEV_MODE = !!i.developer_mode;
+  document.querySelectorAll(".dev-only").forEach(e => e.style.display = DEV_MODE ? "block" : "none");
+}).catch(() => {});
 
 async function refreshRoomList() {
   const data = await api("/api/rooms");
@@ -244,10 +265,12 @@ async function previewConfig() {
 
 async function createStaticRoom() {
   const room_id = $("s-room-id").value.trim();
-  const config_path = "configs/" + $("s-config-select").value;
+  const config_name = $("s-config-select").value;
+  const body = {room_id, config_name};
+  if (DEV_MODE && $("s-eval-yaml").value.trim()) body.eval_data_yaml = $("s-eval-yaml").value.trim();
   try {
     await api("/api/rooms", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({room_id, config_path})});
+      body: JSON.stringify(body)});
     openRoomById(room_id);
   } catch (e) { alert("Could not create room: " + e.message); }
 }
@@ -265,7 +288,7 @@ async function createDynamicRoom() {
     max_classes: +$("d-max-classes").value,
     model: {arch: $("d-arch").value, imgsz: +$("d-imgsz").value},
     federation,
-    eval_data_yaml: $("d-eval-yaml").value.trim() || null,
+    eval_data_yaml: DEV_MODE ? ($("d-eval-yaml").value.trim() || null) : null,
   };
   try {
     await api("/api/rooms", {method: "POST", headers: {"Content-Type": "application/json"},
@@ -380,7 +403,7 @@ function logLine(ev) {
 function connectWs(room_id) {
   if (ws) ws.close();
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  ws = new WebSocket(`${proto}://${location.host}/ws/${room_id}`);
+  ws = new WebSocket(`${proto}://${location.host}/ws/${room_id}?admin_token=${encodeURIComponent(adminToken())}`);
   ws.onmessage = (msg) => {
     const ev = JSON.parse(msg.data);
     if (ev.kind === "snapshot") { render(ev); return; }
@@ -394,13 +417,15 @@ function connectWs(room_id) {
 }
 
 async function stopServer() {
-  if (!confirm("Stop the server process? All rooms will be lost (checkpoints on disk stay).")) return;
-  await fetch("/api/shutdown", {method: "POST"}).catch(() => {});
+  if (!confirm("Stop the server process? Rooms are saved and resume when the server starts again.")) return;
+  await fetch("/api/shutdown", {method: "POST", headers: {"X-Admin-Token": adminToken()}}).catch(() => {});
   document.body.innerHTML = "<div style='padding:40px;font-family:monospace'>Server stopped.</div>";
 }
 
 refreshRoomList();
 loadConfigList();
+const roomInUrl = location.pathname.match(/^\/room\/([^/]+)/);
+if (roomInUrl) openRoomById(decodeURIComponent(roomInUrl[1]));
 </script>
 </body>
 </html>

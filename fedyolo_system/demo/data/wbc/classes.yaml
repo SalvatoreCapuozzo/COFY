@@ -1,0 +1,25 @@
+use_case: wbc
+global_classes:
+- basophil
+- eosinophil
+- erythroblast
+- immunoglobulin
+- lymphocyte
+- monocyte
+- neutrophil
+nodes:
+- name: node_A
+  owned_classes:
+  - neutrophil
+- name: node_B
+  owned_classes:
+  - eosinophil
+- name: node_C
+  owned_classes:
+  - erythroblast
+  - immunoglobulin
+- name: node_D
+  owned_classes:
+  - basophil
+  - lymphocyte
+  - monocyte

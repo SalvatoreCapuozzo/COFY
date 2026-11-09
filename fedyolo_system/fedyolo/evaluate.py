@@ -5,13 +5,15 @@ for trusted, standard mAP numbers.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
+import torch
 from ultralytics import RTDETR, YOLO
 
 from .config import FedYoloConfig
-from .model import _is_rtdetr_arch, build_model
+from .model import _is_rtdetr_arch, build_model, tower_groups
 from .pooling import materialize_pooled_dataset
 
 
@@ -37,8 +39,46 @@ def per_class_map50(metrics) -> dict[str, float]:
     return {name: float(v) for name, v in zip(names, out)}
 
 
+@contextmanager
+def nms_override(per_class_budget: bool = False, keep_classes=None):
+    """Evaluation-time changes to Ultralytics' NMS; with the defaults, none.
+
+    per_class_budget: every class keeps its own top `max_det` detections per image, so the
+        detections of one class can never take the places of another's (class-isolated output
+        budget). With the standard NMS all classes share one budget of `max_det` per image: a class
+        whose rows fire everywhere fills it and every other class scores zero.
+    keep_classes: only these classes are reported (a node's own model, local-only baseline).
+    """
+    if not per_class_budget and keep_classes is None:
+        yield
+        return
+    from ultralytics.utils import nms
+    orig = nms.non_max_suppression
+
+    def patched(prediction, conf_thres=0.25, iou_thres=0.45, classes=None, agnostic=False,
+                multi_label=False, labels=(), max_det=300, nc=0, **kw):
+        pred = prediction[0] if isinstance(prediction, (list, tuple)) else prediction
+        cls = list(range(nc or (pred.shape[1] - 4))) if keep_classes is None else list(keep_classes)
+        if classes is not None:
+            cls = [c for c in cls if c in set(int(x) for x in classes)]
+        if not per_class_budget or not cls:
+            return orig(prediction, conf_thres, iou_thres, classes=cls, agnostic=agnostic,
+                        multi_label=multi_label, labels=labels, max_det=max_det, nc=nc, **kw)
+        # a copy per call: Ultralytics converts the boxes to corner format in place
+        outs = [orig(pred.clone(), conf_thres, iou_thres, classes=[c], agnostic=agnostic,
+                     multi_label=multi_label, labels=labels, max_det=max_det, nc=nc, **kw) for c in cls]
+        return [torch.cat([o[i] for o in outs]) for i in range(len(outs[0]))]
+
+    nms.non_max_suppression = patched
+    try:
+        yield
+    finally:
+        nms.non_max_suppression = orig
+
+
 def evaluate_state_dict(cfg: FedYoloConfig, state_dict: dict,
-                        name: str = "model", verbose: bool = False):
+                        name: str = "model", verbose: bool = False,
+                        per_class_budget: bool = False, keep_classes=None):
     """Run validation and return an Ultralytics metrics object.
 
     verbose=False suppresses all Ultralytics stdout (table, per-class rows,
@@ -54,7 +94,8 @@ def evaluate_state_dict(cfg: FedYoloConfig, state_dict: dict,
             cfg, split="val", out_dir=Path(cfg.output_dir) / "pooled_val",
             fraction=cfg.federation.balanced_fraction, seed=cfg.seed,
         )
-    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes)
+    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes,
+                        towers=tower_groups(cfg))
     model.load_state_dict(state_dict)
     model.names = {i: n for i, n in enumerate(cfg.global_classes)}
     # The wrapper class here is just a task shell for its own .val()
@@ -77,14 +118,15 @@ def evaluate_state_dict(cfg: FedYoloConfig, state_dict: dict,
     # archs so the correct validator is picked.
     yolo = RTDETR("rtdetr-l.yaml") if _is_rtdetr_arch(cfg.model.arch) else YOLO("yolov8n.yaml")
     yolo.model = model
-    metrics = yolo.val(
-        data=str(pooled_yaml),
-        imgsz=cfg.model.imgsz,
-        batch=cfg.federation.batch_size,
-        device=cfg.federation.device,
-        plots=False,
-        verbose=verbose,
-        project=str(Path(cfg.output_dir) / "eval"),
-        name=name,
-    )
+    with nms_override(per_class_budget, keep_classes):
+        metrics = yolo.val(
+            data=str(pooled_yaml),
+            imgsz=cfg.model.imgsz,
+            batch=cfg.federation.batch_size,
+            device=cfg.federation.device,
+            plots=False,
+            verbose=verbose,
+            project=str(Path(cfg.output_dir) / "eval"),
+            name=name,
+        )
     return metrics

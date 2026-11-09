@@ -1,4 +1,20 @@
-# DAFYOLO — Disjoint Asynchronous Federated YOLO
+# COFY — Class-Owned Federated YOLO (formerly DAFYOLO)
+
+Federated object detection for sites that annotate different classes: every class has exactly one
+owner node, only the owner changes that class's output rows, and the server holds no data. Sequential
+(server-scheduled turns) and concurrent (asynchronous) schemes, a barrier-free calibration, a secured
+client-server implementation and ownership-aware robust aggregation.
+
+**Try it:** `cd fedyolo_system && python demo/run_demo.py --use-case wbc --scheme sequential` runs a real
+four-node federation over HTTP on one machine, with small samples of the three use cases
+(parasite eggs, white blood cells, dental radiographs). See [`fedyolo_system/demo/`](fedyolo_system/demo/).
+Or run it online for free: [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SalvatoreCapuozzo/DAFYOLO/blob/master/fedyolo_system/demo/COFY_demo.ipynb)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/SalvatoreCapuozzo/DAFYOLO)
+
+**Licence:** code under the GNU AGPL-3.0 ([`LICENSE`](LICENSE)), the licence of the Ultralytics
+library it builds on. The demo images keep their own licences
+([`fedyolo_system/demo/data/README.md`](fedyolo_system/demo/data/README.md)).
+
 
 Federated object detection where nodes hold disjoint or overlapping class
 subsets. Two implementations live in this repo:

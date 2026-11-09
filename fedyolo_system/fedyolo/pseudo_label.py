@@ -27,6 +27,8 @@ def distillation_loss(
     teacher_scores: torch.Tensor,   # (bs, num_anchors, nc) raw logits, no_grad
     unowned_ids: list[int],
     conf_thresh: float,
+    anchor_mask: torch.Tensor | None = None,   # (bs, num_anchors) bool; False = skip anchor
+    temperature: float = 1.0,                  # >1 softens both sides (FedNTD); loss scaled by T^2
 ) -> torch.Tensor:
     if not unowned_ids:
         return torch.zeros((), device=student_scores.device)
@@ -34,9 +36,14 @@ def distillation_loss(
     s = student_scores[..., unowned_ids]
     t_prob = teacher_scores[..., unowned_ids].detach().sigmoid()
     confident = (t_prob > conf_thresh) | (t_prob < (1.0 - conf_thresh))
+    if anchor_mask is not None:
+        confident = confident & anchor_mask.unsqueeze(-1)
     n = confident.sum()
     if n.item() == 0:
         return torch.zeros((), device=student_scores.device)
 
+    if temperature != 1.0:
+        s = s / temperature
+        t_prob = (teacher_scores[..., unowned_ids].detach() / temperature).sigmoid()
     bce = F.binary_cross_entropy_with_logits(s, t_prob, reduction="none")
-    return (bce * confident).sum() / n.clamp(min=1)
+    return (bce * confident).sum() / n.clamp(min=1) * temperature ** 2

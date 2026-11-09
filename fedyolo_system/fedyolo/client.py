@@ -35,8 +35,12 @@ from rich.progress import (
 
 from .config import FedYoloConfig, NodeConfig
 from .data import build_node_dataloader, build_node_dataset, per_class_instance_counts
-from .model import MaskedRTDETRDetectionLoss, build_model
-from .optim_utils import set_warmup_lr
+from .model import MaskedRTDETRDetectionLoss, build_model, tower_groups
+from .optim_utils import schedule_factor, set_warmup_lr
+from .partial_label import ExclusionDetectionLoss
+from .local_regularizers import LocalExtras
+from .progress_eta import eta_line
+from .pseudo_box import append_pseudo_targets
 from .pseudo_label import distillation_loss
 
 # Guards concurrent appends to live_training_logs.txt in async mode
@@ -56,6 +60,13 @@ class NodeRoundResult:
     # which is exactly the bias FedNova-style merge normalization removes
     # (see fedyolo/merge.py step_scales()).
     num_steps: int = 0
+    # merge_rule "fisher" only: mean squared gradient per parameter over this
+    # round's local steps (diagonal empirical Fisher), on CPU. None otherwise.
+    fisher: dict | None = None
+    # node-persistent state (SCAFFOLD c_i, FL-JSDDC previous model + drift) and
+    # per-round values for the server (SCAFFOLD delta c); see local_regularizers.py
+    node_state: dict | None = None
+    extras: dict | None = None
 
 
 def _optimizer_state_to_cpu(state_dict: dict) -> dict:
@@ -92,7 +103,16 @@ def run_node_round(
     round_idx: int,
     teacher_state_dict: dict | None,
     optimizer_state: dict | None = None,
+    node_state: dict | None = None,
+    server_state: dict | None = None,
+    progress_span: tuple[float, float] | None = None,
+    eta_done_total: tuple[int, int] | None = None,
 ) -> NodeRoundResult:
+    """progress_span: (start, end) fraction of the whole training budget this round covers,
+    for lr_schedule (default: this node's round_idx / rounds). Used by the virtual-clock async
+    server's deadline stop, where a node's number of submissions is not fixed.
+    eta_done_total: (submissions done after this one, total) for the ⏱ line (default: from
+    round_idx and the node's position in the config)."""
     # Seed every RNG the training path actually draws from, not just torch's.
     # ultralytics' own augmentation pipeline (Mosaic, RandomPerspective,
     # RandomHSV, RandomFlip, ...) reads from Python's `random` and numpy's
@@ -112,9 +132,15 @@ def run_node_round(
     owned_ids = node.owned_global_ids(cfg.global_classes)
     unowned_ids = [c for c in range(cfg.nc) if c not in owned_ids]
 
-    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes).to(device)
+    model = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes, towers=tower_groups(cfg)).to(device)
     model.load_state_dict(global_state_dict)
     model.class_weights = _class_mask(cfg.nc, owned_ids, device)  # zeroes loss for unowned classes
+    pl_cfg = cfg.federation.pseudo_label
+    boxes_active = (pl_cfg.enabled and pl_cfg.boxes and round_idx >= pl_cfg.start_round
+                    and teacher_state_dict is not None and len(unowned_ids) > 0)
+    if boxes_active:
+        model.class_weights[unowned_ids] = pl_cfg.box_class_weight
+    n_pseudo = 0
     model.train()
 
     # end2end archs (YOLO26 native mode) forward() a nested
@@ -130,6 +156,14 @@ def run_node_round(
     from ultralytics.nn.modules.head import RTDETRDecoder
     is_rtdetr = isinstance(model.model[-1], RTDETRDecoder)
     end2end = getattr(model.model[-1], "end2end", False)
+    partial = (cfg.federation.exclusion_loss or cfg.federation.pseudo_label.conditional
+               or cfg.federation.pseudo_label.boxes)
+    if partial and (is_rtdetr or end2end):
+        raise ValueError("federation.exclusion_loss / pseudo_label.conditional / pseudo_label.boxes "
+                         "are implemented for the classic (v8DetectionLoss) head only")
+    if cfg.federation.pseudo_label.boxes and cfg.federation.exclusion_loss:
+        raise ValueError("pseudo_label.boxes and exclusion_loss both rewrite the not-owned class "
+                         "weights; enable one of them")
     if is_rtdetr:
         # RTDETRDetectionModel.loss(batch) (called below in place of the
         # usual forward()-then-criterion() two-step -- RT-DETR's forward
@@ -141,6 +175,9 @@ def run_node_round(
         # `if not hasattr(self, "criterion")` check.
         criterion = MaskedRTDETRDetectionLoss(nc=cfg.nc, owned_ids=owned_ids, use_vfl=True)
         model.criterion = criterion
+    elif partial:
+        criterion = ExclusionDetectionLoss(
+            model, unowned_ids if cfg.federation.exclusion_loss else [])
     else:
         criterion = E2ELoss(model) if end2end else v8DetectionLoss(model)
     if end2end:
@@ -156,33 +193,47 @@ def run_node_round(
         # reported mAP50 for Phase 2 was chronically undertrained the
         # entire time. fedyolo's model.args is a minimal SimpleNamespace
         # (see model.py's _default_train_args) with no `epochs` field at
-        # all, which decay() needs -- set it here to this round's
-        # local_epochs (not the federation's total epoch budget): the
-        # model/criterion are rebuilt fresh every round from the
-        # aggregated global weights, so local_epochs is the actual span
-        # this criterion instance will live for, and scoping the decay to
-        # it means one2one gets meaningfully trained within every single
-        # round's contribution instead of needing a persistent counter
-        # that would never survive the per-round rebuild anyway.
-        criterion.one2many.hyp.epochs = cfg.federation.local_epochs
-        criterion.one2one.hyp.epochs = cfg.federation.local_epochs
+        # all, which decay() needs. The criterion is rebuilt every round, so
+        # the schedule is driven by GLOBAL progress: span = the federation's
+        # whole epoch budget, fast-forwarded to this round's first epoch
+        # (same as centralized.py). Scoping it to local_epochs instead
+        # restarted o2m=0.8 -> 0.1 every round (FED_YOLO26_ASYNC_SPEC.md §3.4).
+        n_rounds = (cfg.federation.async_node_cycles if cfg.federation.mode == "async"
+                    else cfg.federation.rounds)
+        criterion.one2many.hyp.epochs = n_rounds * cfg.federation.local_epochs
+        criterion.one2one.hyp.epochs = n_rounds * cfg.federation.local_epochs
+        criterion.updates = round_idx * cfg.federation.local_epochs
+        criterion.o2m = criterion.decay(criterion.updates)
+        criterion.o2o = max(criterion.total - criterion.o2m, 0)
 
+    teacher_is_current = pl_cfg.boxes or pl_cfg.teacher == "current"
     use_distill = (
         cfg.federation.pseudo_label.enabled
         and round_idx >= cfg.federation.pseudo_label.start_round
-        and teacher_state_dict is not None
+        and (teacher_state_dict is not None or teacher_is_current)
         and len(unowned_ids) > 0
     )
     teacher = None
     if use_distill:
-        teacher = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes).to(device)
-        teacher.load_state_dict(teacher_state_dict)
+        teacher = build_model(cfg.model.arch, cfg.nc, cfg.model.imgsz, pretrained=cfg.model.pretrained, class_names=cfg.global_classes, towers=tower_groups(cfg)).to(device)
+        # boxes / teacher="current": the global model this node just pulled
+        teacher.load_state_dict(global_state_dict if teacher_is_current else teacher_state_dict)
         teacher.eval()
         for p in teacher.parameters():
             p.requires_grad_(False)
 
+    if (cfg.federation.scaffold or cfg.federation.jsddc) and (is_rtdetr or end2end):
+        raise ValueError("scaffold / jsddc are implemented for the classic (v8DetectionLoss) head only")
+    extras = LocalExtras(model, cfg, global_state_dict, owned_ids, device, node_state, server_state)
+
     dataset = build_node_dataset(node, cfg, split="train")
     dataloader = build_node_dataloader(node, cfg, split="train")
+    fed = cfg.federation
+    if fed.reshuffle_rounds or fed.local_fraction > 0:
+        import zlib
+        dataloader.generator.manual_seed(
+            (cfg.seed * 1_000_003 + round_idx * 7_919 + zlib.crc32(node.name.encode())) % (2**63))
+    n_frac = max(1, round(fed.local_fraction * len(dataloader))) if fed.local_fraction > 0 else 0
     optimizer = torch.optim.SGD(
     	model.parameters(), lr=cfg.federation.lr0, momentum=0.9, weight_decay=5e-4
     )
@@ -196,6 +247,8 @@ def run_node_round(
         optimizer.load_state_dict(optimizer_state)
 
     step = 0
+    fisher = ({n: torch.zeros_like(p, dtype=torch.float32) for n, p in model.named_parameters()}
+              if cfg.federation.merge_rule == "fisher" else None)
     log_path = Path(cfg.output_dir) / "live_training_logs.txt"
     # width=200: force_terminal alone doesn't stop Rich truncating columns to
     # "..." -- with no real tty to measure, it falls back to a narrow default
@@ -205,7 +258,7 @@ def run_node_round(
     # Total steps for the whole round = epochs × batches/epoch
     # This lets us use a SINGLE progress task instead of one per epoch,
     # which is what was causing the flickering.
-    total_steps = cfg.federation.local_epochs * len(dataloader)
+    total_steps = n_frac or cfg.federation.local_epochs * len(dataloader)
 
     # Read the latest mAP once before training starts (server writes this file
     # after each evaluation; we refresh it once per epoch below).
@@ -225,21 +278,31 @@ def run_node_round(
     ) as progress:
         
         task = progress.add_task(
-            f"[cyan]{node.name} Ep 1/{cfg.federation.local_epochs}[/cyan]",
+            f"[cyan]{node.name} Ep 1/{1 if n_frac else cfg.federation.local_epochs}[/cyan]",
             total=total_steps,
         )
         
-        for epoch in range(cfg.federation.local_epochs):
+        for epoch in range(1 if n_frac else cfg.federation.local_epochs):
             # Variables to track the average loss for this specific epoch
             epoch_loss = 0.0
             num_batches = 0
 
             for batch in dataloader:
-                set_warmup_lr(optimizer, step, cfg.federation.warmup_steps, cfg.federation.lr0)
+                if n_frac and step >= n_frac:   # local_fraction: part of one epoch
+                    break
+                # lr_schedule: progress over the node's whole budget (all rounds / cycles)
+                n_rounds_all = (cfg.federation.async_node_cycles if cfg.federation.mode == "async"
+                                else cfg.federation.rounds)
+                done_frac = ((round_idx * total_steps + step) / (n_rounds_all * total_steps)
+                             if progress_span is None else
+                             progress_span[0] + (progress_span[1] - progress_span[0]) * step / total_steps)
+                set_warmup_lr(optimizer, step, cfg.federation.warmup_steps, cfg.federation.lr0,
+                              schedule_factor(cfg, done_frac))
                 step += 1
 
                 batch["img"] = batch["img"].to(device).float() / 255.0
                 optimizer.zero_grad()
+                parsed = None
 
                 if is_rtdetr:
                     # Bundled forward+loss, not the forward()-then-criterion()
@@ -259,6 +322,22 @@ def run_node_round(
                 else:
                     preds = model.forward(batch["img"])
                     parsed = criterion.parse_output(preds)
+                    if partial:
+                        # teacher runs BEFORE the loss here: exclusion needs its
+                        # confident not-owned predictions to skip overlapping objects
+                        t_pre = None
+                        criterion.skip = None
+                        if use_distill:
+                            with torch.no_grad():
+                                t_pre = teacher.forward(batch["img"])
+                            if boxes_active and isinstance(t_pre, tuple):
+                                n_pseudo += append_pseudo_targets(
+                                    batch, t_pre[0], unowned_ids, cfg.nc, pl_cfg.conf_thresh)
+                            if isinstance(t_pre, tuple):
+                                t_pre = t_pre[1]
+                            if cfg.federation.exclusion_loss:
+                                t_prob = t_pre["scores"].permute(0, 2, 1)[..., unowned_ids].sigmoid()
+                                criterion.skip = t_prob > cfg.federation.pseudo_label.conf_thresh
                     loss, _ = criterion.loss(parsed, batch)
                 loss = loss.sum()
 
@@ -267,9 +346,12 @@ def run_node_round(
                         "pseudo-labeling isn't wired through RT-DETR's loss path -- "
                         "leave federation.pseudo_label.enabled: false for RT-DETR configs"
                     )
-                if use_distill:
-                    with torch.no_grad():
-                        t_preds = teacher.forward(batch["img"])
+                if use_distill and not pl_cfg.boxes:
+                    if partial:
+                        t_preds = t_pre
+                    else:
+                        with torch.no_grad():
+                            t_preds = teacher.forward(batch["img"])
                     # teacher.eval() means teacher.forward() returns the
                     # eval-mode (y, preds) tuple, not the raw dict -- unwrap
                     # it the same way parse_output() does for the non-e2e
@@ -287,11 +369,25 @@ def run_node_round(
                         student_scores = parsed["scores"].permute(0, 2, 1).contiguous()
                         teacher_scores = t_preds["scores"].permute(0, 2, 1).contiguous()
                     d_loss = distillation_loss(
-                        student_scores, teacher_scores, unowned_ids, cfg.federation.pseudo_label.conf_thresh
+                        student_scores, teacher_scores, unowned_ids, cfg.federation.pseudo_label.conf_thresh,
+                        anchor_mask=(~criterion.last_fg_mask
+                                     if cfg.federation.pseudo_label.conditional else None),
+                        temperature=pl_cfg.temperature,
                     )
                     loss = loss + cfg.federation.pseudo_label.weight * d_loss
 
+                if extras.active:
+                    extra = extras.extra_loss(model, parsed, batch["img"])
+                    if extra is not None:
+                        loss = loss + extra
+
                 loss.backward()
+                if fisher is not None:
+                    # raw (pre-clip) gradients of this node's own loss
+                    for n, p in model.named_parameters():
+                        if p.grad is not None:
+                            fisher[n] += p.grad.detach().float() ** 2
+                extras.after_backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=cfg.federation.grad_clip)
                 optimizer.step()
 
@@ -306,7 +402,7 @@ def run_node_round(
                     advance=1,
                     description=(
                         f"[cyan]{node.name} "
-                        f"Ep {epoch + 1}/{cfg.federation.local_epochs}[/cyan] "
+                        f"Ep {epoch + 1}/{1 if n_frac else cfg.federation.local_epochs}[/cyan] "
                         f"[white]Loss: {loss.item():.4f}[/white]"
                         f"{map_str}"
                     ),
@@ -334,11 +430,17 @@ def run_node_round(
                         f"Avg Loss: {avg_epoch_loss:.4f}\n"
                     )
 
-    custom_console.print(f"[bold green]✔ {node.name}[/bold green] finished local training!")
+    custom_console.print(f"[bold green]✔ {node.name}[/bold green] finished local training!"
+                         + (f" ({n_pseudo} pseudo boxes added)" if boxes_active else ""))
+    eta = eta_line(cfg, node, round_idx, eta_done_total)
+    if eta:
+        print(eta, flush=True)
 
     state_dict = {k: v.detach().cpu() for k, v in model.state_dict().items()}
     class_counts = per_class_instance_counts(dataset, cfg.nc)
     returned_optimizer_state = _optimizer_state_to_cpu(optimizer.state_dict())
+    node_state_out, extras_out = (extras.finalize(state_dict, step) if extras.active
+                                  else (node_state, None))
 
     return NodeRoundResult(
         name=node.name,
@@ -348,4 +450,8 @@ def run_node_round(
         owned_global_ids=owned_ids,
         optimizer_state=returned_optimizer_state,
         num_steps=step,
+        fisher=({n: (v / max(step, 1)).cpu() for n, v in fisher.items()}
+                if fisher is not None else None),
+        node_state=node_state_out,
+        extras=extras_out,
     )

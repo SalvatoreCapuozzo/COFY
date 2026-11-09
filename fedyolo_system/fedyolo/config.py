@@ -41,6 +41,33 @@ class PseudoLabelConfig:
     start_round: int = 5
     conf_thresh: float = 0.5
     weight: float = 0.5
+    conditional: bool = False       # ConDist-style: distill only at anchors NOT assigned
+                                    # to this node's own ground truth (see partial_label.py)
+    boxes: bool = False             # teacher (= pulled global) detections of not-owned classes
+                                    # become extra ground truth; replaces logit distillation
+                                    # (see pseudo_box.py). conf_thresh is the detection threshold.
+    box_class_weight: float = 0.5   # boxes only: class-loss weight of not-owned classes (was 0)
+    temperature: float = 1.0        # distillation temperature (FedNTD-style softening)
+    teacher: str = "previous"       # sync teacher: "previous" round's global (original) or
+                                    # "current" = the model the node starts from (FedNTD);
+                                    # "current" also enables distillation from round 0
+
+
+@dataclass
+class RobustConfig:
+    """Attacks on the federation and the server's defence (fedyolo/robust.py). Opt-in: the
+    defaults change nothing."""
+    attacker: str = ""              # attacking node ("" = none; "seed" = node seed mod N, rotating over seeds)
+    attack: str = "none"            # none | noise | signflip | scale | bnpoison | rowhijack | weightinflate
+                                    #   (manipulated uploads; corrupted labels / backdoor triggers are a
+                                    #   poisoned copy of the node's data: tools/make_attack_data.py)
+    attack_factor: float = 1.0      # noise: size vs the honest update; signflip / scale: multiplier;
+                                    #   bnpoison: shift in std units; rowhijack: bias added; weightinflate: x images
+    defense: str = "none"           # none | ora (ownership-aware robust aggregation)
+    enforce_ownership: bool = True  # class rows only from the registry's owner (as fedyolo/net does)
+    clip_kappa: float = 2.0         # ora: a part is clipped to kappa x the other nodes' median size of it
+    history: int = 4                # ora: recent updates per node kept for that median
+    trim: int = 1                   # ora, parallel sync: trimmed mean drops `trim` highest and lowest
 
 
 @dataclass
@@ -62,6 +89,7 @@ class FederationConfig:
                                     # to pin it instead (e.g. to force CPU on a
                                     # CUDA box, or to target a specific GPU).
     pseudo_label: PseudoLabelConfig = field(default_factory=PseudoLabelConfig)
+    robust: RobustConfig = field(default_factory=RobustConfig)
     data_fraction: float = 1.0      # use only the first N% of each node's images (both
                                     # splits); for fast smoke-tests on a large real dataset
                                     # without touching the config's node/class layout.
@@ -110,7 +138,12 @@ class FederationConfig:
                                     #   non-IID case where nodes optimize disjoint
                                     #   objectives and plain averaging lets opposing
                                     #   updates cancel. See fedyolo/merge.py.
-    merge_trim: float = 0.2         # "ties" only: fraction of each node's smallest
+    fisher_damping: float = 0.01    # "fisher" only: per-parameter weights are
+                                    #   N_k (F_k + eps) / sum_j N_j (F_j + eps), with F_k the
+                                    #   node's diagonal empirical Fisher and eps = damping x the
+                                    #   mean Fisher, so uninformative coordinates fall back to
+                                    #   FedAvg. Diagonal FIPA (arXiv 2601.13608) / FedFisher.
+    merge_trim: float = 0.2        # "ties" only: fraction of each node's smallest
                                     #   delta entries zeroed before the sign election.
     weight_basis: str = "images"    # M4: "images" (original) or "instances" -- what a
                                     #   node's share of the shared-trunk merge is
@@ -122,6 +155,90 @@ class FederationConfig:
                                     #   effective step count before weighting, removing the
                                     #   bias from nodes taking different numbers of local
                                     #   steps under a uniform local_epochs.
+    async_rule: str = "delta"       # async only. "delta" = apply each update on arrival
+                                    #   (original). "ca2fl" = buffered, cache-calibrated,
+                                    #   class-aware aggregation (fedyolo/ca2fl.py).
+    async_order: str = "fixed"      # async with max_concurrent_nodes=1: "fixed" (nodes take
+                                    #   turns in config order, original) or "shuffle" (a new
+                                    #   seeded random node order every cycle)
+    ca2fl_buffer: int = 0           # arrivals per global step; 0 = max(2, ceil(n_nodes/3))
+    ca2fl_staleness_exp: float = 0.5  # weight (1+s)^-exp for an update s global steps stale
+    ca2fl_max_staleness: int = 20   # updates staler than this are discarded
+    ca2fl_cache: bool = True        # False = FedBuff (buffered averaging without the cache)
+    async_mix: float = 1.0          # "delta" rule only: fraction of each update mixed into the
+                                    #   global model (FedAsync's alpha); 1.0 = apply in full (original)
+    async_clock: str = "real"       # async only. "real" (original): node threads, arrival order =
+                                    #   actual completion order (with max_concurrent_nodes 1: turns).
+                                    #   "virtual": discrete-event simulation of nodes training
+                                    #   concurrently on separate machines; each submission lasts
+                                    #   images x local_epochs / node speed x jitter, updates are
+                                    #   applied in the order they finish on that clock (order,
+                                    #   staleness and per-node update counts emerge from timing,
+                                    #   never shuffled). Runs one training at a time on one GPU.
+    virtual_jitter: float = 0.2     # "virtual": each submission's duration x U[1-j, 1+j] (seeded)
+    virtual_hw_spread: float = 0.3  # "virtual": each node's machine speed x U[1-s, 1+s], drawn once
+                                    #   per seed (which node is slowest varies with the seed)
+    async_stop: str = "cycles"      # "virtual": "cycles" = every node submits async_node_cycles times
+                                    #   (fast nodes finish early); "deadline" = all nodes train until
+                                    #   the time at which the same total compute is spent (fast nodes
+                                    #   submit more often)
+    async_final_chain: int = 0      # "virtual" + "cycles": every node's last N cycles run after the
+                                    #   concurrent part as a server-ordered chain (one node at a time,
+                                    #   seeded shuffled order per cycle, staleness 0), as in the
+                                    #   sequential scheme. Same compute; the federation waits for the chain
+    owned_towers: bool = False      # one class tower (the two convs of cv3.{i} before the class rows) per
+                                    #   node, trained by and aggregated from that node only: rule R3
+                                    #   extended from the rows to the features they read (async only)
+    async_conflict: str = "none"    # async: "project" removes from an update, tensor by tensor, the
+                                    #   components that oppose the updates applied while it was being
+                                    #   computed (FedFV-style projection; trainable shared weights only)
+    conflict_window: int = 8        # "project": at most this many recent applied updates are kept
+    local_fraction: float = 0.0     # >0: each round / async submission trains this fraction of one epoch
+                                    #   of the node's data (at least 1 step) instead of local_epochs, so
+                                    #   models diverge less between merges; rounds / cycles must grow by
+                                    #   1/fraction to keep the same compute
+    reshuffle_rounds: bool = False  # reseed the node's data order per (seed, node, round). The loader is
+                                    #   rebuilt every round with ultralytics' fixed generator seed, so
+                                    #   otherwise every round starts from the same image order (required
+                                    #   with local_fraction, or every round trains the same images)
+    bn_merge: str = "delta"         # async: "delta" (original) applies (node - pulled) to BatchNorm running
+                                    #   statistics too; "interpolate" moves them towards the node's values
+                                    #   with the update's weight (no accumulation of stale deltas)
+    progressive_refresh: bool = False  # calibration tooling only: after the asynchronous progressive
+                                    #   calibration, early contributors re-fit their rows once against
+                                    #   the complete BatchNorm pool (stage acal_refresh, rows +acalr)
+    server_lr: float = 1.0          # sync only: shared trainable weights move server_lr x the averaged
+                                    #   update (FedOpt server step). 1.0 = plain averaging (original).
+                                    #   Per-class rows (one owner each, not diluted) and BatchNorm
+                                    #   running statistics are left as averaged.
+    swa_per_node: bool = False      # final model = average of the global versions right after each
+                                    #   node's last update (one per node, whatever its speed);
+                                    #   overrides swa_last
+    etf_head: bool = False          # per-class rows fixed to a simplex ETF (class_geometry.py)
+    class_spread: float = 0.0       # >0: weight of the client-side class-spreading penalty
+    swa_last: int = 0               # >0: final model = average of the last N global versions
+    prox_mu: float = 0.0            # >0: FedProx proximal term mu/2 ||w - w_global||^2
+    scaffold: bool = False          # SCAFFOLD control variates (sync only)
+    jsddc: bool = False             # FL-JSDDC: self-distillation from the node's previous local
+                                    #   model + drift compensation (FedDC form; sync only)
+    jsddc_alpha: float = 0.01       # drift penalty weight (FedDC alpha)
+    jsddc_tau: float = 2.0          # self-distillation temperature (class and channel terms)
+    chain_exchange: bool = False    # sync only: N models circulate, each visiting every node once
+                                    #   per cycle (cyclic Latin square on a new seeded node order
+                                    #   each cycle), averaged at cycle ends. rounds must be a
+                                    #   multiple of the node count.
+    final_calibration: bool = False # after the last aggregation: nodes re-estimate BatchNorm
+                                    #   statistics, then retrain only their own class rows on the
+                                    #   frozen final model (fedyolo/calibrate.py)
+    calibration_epochs: int = 1     # local epochs of the class-row retraining
+    lr_schedule: str = "constant"   # "constant" (original: lr0 after warmup) or "linear": lr0 decays
+                                    #   linearly to lrf*lr0 over the whole training budget, driven by
+                                    #   global progress (federated and centralized alike)
+    lrf: float = 0.01               # final learning rate as a fraction of lr0 ("linear" only)
+    exclusion_loss: bool = False    # at anchors assigned to this node's own ground truth,
+                                    #   train not-owned classes as negatives (an object has
+                                    #   exactly one class) instead of masking them out.
+                                    #   See fedyolo/partial_label.py.
     keep_checkpoints: int = 3       # how many recent round checkpoints to retain.
                                     #   >1 lets a finished run be re-scored at several
                                     #   late rounds on a different eval set, which this
@@ -217,7 +334,8 @@ def load_config_from_dict(raw: dict, partial: bool = False) -> FedYoloConfig:
 
     fed_raw = dict(raw.get("federation", {}))
     pl_raw = fed_raw.pop("pseudo_label", {})
-    federation = FederationConfig(pseudo_label=PseudoLabelConfig(**pl_raw), **fed_raw)
+    rb_raw = fed_raw.pop("robust", {})
+    federation = FederationConfig(pseudo_label=PseudoLabelConfig(**pl_raw), robust=RobustConfig(**rb_raw), **fed_raw)
     federation.device = _resolve_device(federation.device)
 
     if federation.mode not in ("sync", "async"):

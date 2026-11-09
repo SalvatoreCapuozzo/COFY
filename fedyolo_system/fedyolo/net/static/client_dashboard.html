@@ -44,6 +44,7 @@
   .badge.training, .badge.uploading, .badge.waiting { background: #3a2a52; color: var(--accent); }
   .badge.done { background: #163d30; color: var(--good); }
   .badge.error { background: #3d1a1a; color: var(--bad); }
+  .badge.reconnecting { background: #3d331a; color: #fbbf24; }
   .kv { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-size: 13px; }
   .kv .k { color: var(--muted); }
   .kv .v { font-family: var(--mono); }
@@ -91,6 +92,10 @@
       <div>
         <label>Room password</label>
         <input id="room-password" placeholder="ask the server operator">
+      </div>
+      <div>
+        <label>Reclaim node (optional)</label>
+        <input id="reclaim-node" placeholder="e.g. node_A -- only after restarting this client">
       </div>
     </div>
     <button onclick="fetchRoom()">Fetch room</button>
@@ -235,8 +240,9 @@ async function fetchRoom() {
   try {
     const server_url = $("server-url").value.trim();
     const room_id = $("room-id").value.trim();
+    const password = $("room-password").value;
     const data = await api("/api/fetch_room", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({server_url, room_id})});
+      body: JSON.stringify({server_url, room_id, password})});
     roomInfo = data.room;
     const claimed = roomInfo.claimed_classes && roomInfo.claimed_classes.length ? roomInfo.claimed_classes.join(", ") : "none yet";
     $("room-info").textContent = `${roomInfo.mode}${roomInfo.dynamic ? ' · dynamic' : ' · static'} · ${Object.keys(roomInfo.nodes).length} node(s) so far · claimed classes: ${claimed}`;
@@ -258,7 +264,8 @@ async function join() {
       ? $("class-names").value.split(",").map(s => s.trim()).filter(Boolean)
       : null;
     const snap = await api("/api/join", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({server_url, room_id, password, data_yaml, class_names})});
+      body: JSON.stringify({server_url, room_id, password, data_yaml, class_names,
+                            node_name: $("reclaim-node").value.trim() || null})});
     $("status-card").style.display = "block";
     $("room-card").style.display = "block";
     $("log-card").style.display = "block";

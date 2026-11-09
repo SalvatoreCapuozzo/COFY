@@ -131,8 +131,54 @@ def _is_rtdetr_arch(arch: str) -> bool:
     return "rtdetr" in Path(arch).stem.lower()
 
 
+class OwnedClassTowers(torch.nn.Module):
+    """Replaces one scale's classification branch cv3.{i} when federation.owned_towers is set: one
+    copy of the two feature-mixing convs (the class tower) per node, each feeding only the rows of
+    that node's classes through the shared final projection, which keeps its key cv3.{i}.2 (so
+    per_class_param_names() is unchanged). Tower k (keys cv3.{i}.towers.k.*) is trained only by
+    the loss of node k's classes and aggregated only from node k: R3 extended from the class rows
+    to the features they read."""
+
+    def __init__(self, branch: torch.nn.Sequential, groups: list[list[int]]):
+        import copy
+        super().__init__()
+        self.towers = torch.nn.ModuleList(
+            torch.nn.Sequential(copy.deepcopy(branch[0]), copy.deepcopy(branch[1])) for _ in groups)
+        self.add_module("2", branch[2])
+        order = [c for g in groups for c in g]
+        if sorted(order) != list(range(branch[2].out_channels)):
+            raise ValueError("owned_towers: every class needs exactly one owner")
+        for k, g in enumerate(groups):
+            self.register_buffer(f"_idx{k}", torch.tensor(g, dtype=torch.long), persistent=False)
+        self.register_buffer("_inv", torch.tensor(sorted(range(len(order)), key=order.__getitem__)),
+                             persistent=False)
+
+    def forward(self, x):
+        proj = getattr(self, "2")
+        out = []
+        for k, tower in enumerate(self.towers):
+            idx = getattr(self, f"_idx{k}")
+            out.append(torch.nn.functional.conv2d(tower(x), proj.weight[idx], proj.bias[idx]))
+        return torch.cat(out, 1).index_select(1, self._inv)
+
+
+def tower_groups(cfg) -> list[list[int]] | None:
+    """Class ids of each node's tower (config order) when federation.owned_towers is set, else None."""
+    if not getattr(cfg.federation, "owned_towers", False):
+        return None
+    return [n.owned_global_ids(cfg.global_classes) for n in cfg.nodes]
+
+
+def owned_tower_keys(model: DetectionModel, n_towers: int) -> list[set[str]]:
+    """State-dict keys of each node's class towers (empty sets without owned towers)."""
+    h = _detect_module_index(model)
+    keys = list(model.state_dict())
+    return [{k for k in keys if k.startswith(f"model.{h}.cv3.") and f".towers.{t}." in k} for t in range(n_towers)]
+
+
 def build_model(
-    arch: str, nc: int, imgsz: int, pretrained: bool = True, class_names: list[str] | None = None
+    arch: str, nc: int, imgsz: int, pretrained: bool = True, class_names: list[str] | None = None,
+    towers: list[list[int]] | None = None,
 ) -> DetectionModel:
     """Build a YOLOv8/YOLO26/YOLOE detection model.
 
@@ -151,6 +197,9 @@ def build_model(
 
     pretrained=False reproduces the original from-scratch (fully blank)
     behavior -- training from random initialization end to end.
+
+    towers: per-node class-id groups (tower_groups(cfg)) -- every scale's class tower is
+    replaced by one copy per node (OwnedClassTowers), all starting from the same weights.
 
     class_names: required for YOLOE archs (ignored otherwise) -- the global
     class-name list (cfg.global_classes) used to compute the frozen
@@ -172,6 +221,14 @@ def build_model(
         if not class_names:
             raise ValueError(f"build_model({arch!r}): YOLOE archs require class_names (pass cfg.global_classes)")
         _attach_frozen_class_embeddings(model, arch, class_names)
+    if towers:
+        if is_yoloe or is_rtdetr:
+            raise ValueError("owned_towers is implemented for the Detect head only")
+        head = model.model[_detect_module_index(model)]
+        if getattr(head, "end2end", False):
+            raise ValueError("owned_towers is implemented for non-end2end heads only")
+        for i in range(head.nl):
+            head.cv3[i] = OwnedClassTowers(head.cv3[i], towers)
     return model
 
 
@@ -332,7 +389,9 @@ def split_state_dict(state_dict: dict, model: DetectionModel) -> tuple[dict, dic
 def aggregate_shared(node_state_dicts: list[dict], node_weights: list[float],
                      model: DetectionModel, prev_global: dict | None = None,
                      rule: str = "mean", trim: float = 0.2,
-                     node_steps: list[float] | None = None) -> dict:
+                     node_steps: list[float] | None = None,
+                     node_fishers: list[dict] | None = None,
+                     fisher_damping: float = 0.01) -> dict:
     """Sample-weighted FedAvg over every node, restricted to shared keys.
 
     rule="mean" (the default) is the original behavior, unchanged. rule="ties"
@@ -342,7 +401,8 @@ def aggregate_shared(node_state_dicts: list[dict], node_weights: list[float],
     per_class_keys = {k for pair in per_class_param_names(model) for k in pair}
     keys = [k for k in node_state_dicts[0].keys() if k not in per_class_keys]
     return merge_shared(node_state_dicts, node_weights, keys, prev_global,
-                        rule=rule, trim=trim, node_steps=node_steps)
+                        rule=rule, trim=trim, node_steps=node_steps,
+                        node_fishers=node_fishers, fisher_damping=fisher_damping)
 
 
 def aggregate_per_class(
@@ -400,6 +460,8 @@ def aggregate(
     node_steps: list[float] | None = None,
     weight_basis: str = "images",
     node_instance_totals: list[float] | None = None,
+    node_fishers: list[dict] | None = None,
+    fisher_damping: float = 0.01,
 ) -> dict:
     """Full server-side aggregation for one federated round.
 
@@ -431,7 +493,8 @@ def aggregate(
 
     shared = aggregate_shared(node_state_dicts, weights, model,
                               prev_global=prev_global, rule=rule, trim=trim,
-                              node_steps=node_steps)
+                              node_steps=node_steps, node_fishers=node_fishers,
+                              fisher_damping=fisher_damping)
     per_class = aggregate_per_class(node_state_dicts, node_owned_global_ids, node_class_counts, model, nc)
     merged = {**shared, **per_class}
     return merged
