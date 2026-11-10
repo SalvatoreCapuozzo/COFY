@@ -18,11 +18,11 @@ from client_updated import SERVER_IP, SSH_PORT, SSH_USER, SSH_PASSWORD, SERVER_U
 # Diagnosing a *remote* server over SSH -- see check_server_running.py's note
 # on why this defaults to linux_gpu_box rather than local-OS auto-detection.
 from server_paths import load_profile
-_remote = load_profile(os.getenv("DAFYOLO_SERVER_PROFILE", "linux_gpu_box"))
+_remote = load_profile(os.getenv("COFY_SERVER_PROFILE", "linux_gpu_box"))
 SERVER_GLOBAL_MODEL_DIR = _remote["global_model_dir"]
 
 print("=" * 80)
-print("🔍 DAFYOLO Communication Diagnostic")
+print("🔍 COFY Communication Diagnostic")
 print("=" * 80)
 
 # Check 1: Credentials

@@ -1,4 +1,4 @@
-# DAFYOLO: Alternative Federated Learning Strategies
+# COFY: Alternative Federated Learning Strategies
 
 ## Overview
 This document details 10 advanced federated learning strategies beyond the current implementations (FedHead, Stitch, TIES, FedAvg). Each strategy addresses specific aspects of the non-IID heterogeneous object detection problem.
@@ -58,7 +58,7 @@ mu_values = [0.001, 0.01, 0.05, 0.1, 0.5]
 - ❌ Need to tune `μ` parameter
 - ❌ Adds computational overhead
 
-### Recommended Configuration for DAFYOLO
+### Recommended Configuration for COFY
 ```python
 FEDPROX_MU = 0.01  # Start conservative
 FEDPROX_ROUNDS = 5-10  # Number of local rounds
@@ -135,7 +135,7 @@ TOP_K_CLASSES = None  # If set, only merge top-K most important
 - ❌ Additional computation for importance scoring
 - ❌ Hyperparameter tuning required
 
-### Recommended Configuration for DAFYOLO
+### Recommended Configuration for COFY
 ```python
 IMPORTANCE_THRESHOLD = 0.3  # Only merge significant classes
 ADAPTIVE = True  # Importance scales with iterations
@@ -257,7 +257,7 @@ Level 2: w_global = weighted_mean(w_group_i)
 - ❌ Need to compute overlap matrix
 - ❌ Dynamic clustering adds overhead
 
-### Recommended Configuration for DAFYOLO
+### Recommended Configuration for COFY
 ```python
 # Pre-compute for both scenarios:
 EXTREME_NON_IID_CLUSTERS = [

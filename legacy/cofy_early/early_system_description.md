@@ -1,8 +1,8 @@
-# DAFYOLO — Disjoint Asynchronous Federated YOLO
+# COFY — Disjoint Asynchronous Federated YOLO
 
 ## Abstract
 
-DAFYOLO is a federated learning framework for multi-class object detection in
+COFY is a federated learning framework for multi-class object detection in
 which participating nodes hold **disjoint subsets of class annotations** — a
 common real-world constraint in distributed medical imaging, where different
 sites specialize in different findings (e.g. different parasite egg taxa in
@@ -47,7 +47,7 @@ model after aggregation.
 
 ## 2. Model Architecture
 
-DAFYOLO uses an anchor-free YOLO detector with a **decoupled head**; the
+COFY uses an anchor-free YOLO detector with a **decoupled head**; the
 decoupled head is what makes the per-class parameter decomposition below
 exact. `model.pretrained: true` is the default — the SHARED parameters below
 initialize from the arch's official COCO checkpoint, the per-class head stays
@@ -171,7 +171,7 @@ $s_i$ versions old contributes an update computed from outdated information.
 #### 4.2.2 Staleness-Discounted Delta Aggregation
 
 Rather than re-averaging all nodes (impossible with only one node submitting),
-DAFYOLO uses an **implicit-gradient delta update** discounted by staleness.
+COFY uses an **implicit-gradient delta update** discounted by staleness.
 
 Let $\Delta_i = \theta_i^\text{trained} - \theta^\text{pulled}$ be the
 parameter displacement the node learned during local training. The server

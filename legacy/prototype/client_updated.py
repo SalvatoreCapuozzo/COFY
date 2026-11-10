@@ -548,7 +548,7 @@ def trigger_server_reset():
 
 
 if __name__ == "__main__":
-    print("\n=== DAFYOLO Connection Setup ===")
+    print("\n=== COFY Connection Setup ===")
     print("How is your server running?")
     print("  [1] Remote Server (via SSH to Cloud/Remote Machine)")
     print("  [2] Local Server (Running in another terminal on THIS machine)")
@@ -566,7 +566,7 @@ if __name__ == "__main__":
         print(f"✅ Running in REMOTE mode targeting: {SERVER_IP}")
         
     while True:
-        print("\n=== DAFYOLO Smart Client (v6) ===")
+        print("\n=== COFY Smart Client (v6) ===")
         print("1. Sync & Train (Auto-Configured)")
         print("2. Download Global Model Backup")
         print("3. Run Inference (Interactive Selector)")

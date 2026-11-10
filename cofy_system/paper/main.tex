@@ -12,7 +12,7 @@
 %   system, deployment and defence, use cases) | 4 Experimental design | 5 Results | 6 Discussion | 7 Conclusions
 % The main text does not mention the Supplementary Information (author decision 2026-11-07).
 % The registered verdict of the concurrent scheme is left to the authors (blue note in Section 5.1).
-% System name: COFY, Class-Owned Federated YOLO (author decision 2026-11-07; formerly DAFYOLO).
+% System name: COFY, Class-Owned Federated YOLO (author decision 2026-11-07;).
 % Build: latexmk -pdf main.tex supplementary.tex
 
 \documentclass[pdflatex,sn-mathphys-num]{sn-jnl}
@@ -654,9 +654,6 @@ Federated object detection across sites that annotate different classes can be t
 %=====================================================================================
 \backmatter
 
-\bmhead{Acknowledgements}
-\authornote{optional}
-
 \section*{Declarations}
 
 \begin{itemize}
@@ -666,8 +663,8 @@ Federated object detection across sites that annotate different classes can be t
 \item \textbf{Consent for publication.} Not applicable.
 \item \textbf{Data availability.} WBC: bounding boxes~\cite{wbcdetection} for the PBC dataset~\cite{acevedo2020pbc} (CC BY 4.0). DENTEX~\cite{hamamci2023dentex} (CC BY-NC-SA 4.0). KFM12: the full twelve-class dataset will be released by the authors \authornote{repository and DOI}; a two-class subset is already public~\cite{capuozzo2025trematodes}. Conversion and splitting scripts are part of the code release.
 \item \textbf{Materials availability.} Not applicable.
-\item \textbf{Code availability.} The code (system, network implementation, study tools), every configuration, seed and log, and the frozen confirmatory code with its SHA-256 records are available at \url{https://github.com/SalvatoreCapuozzo/DAFYOLO} under the GNU AGPL-3.0 licence, together with a one-command demonstration that runs a four-node federation over the network on sample images of the three use cases \authornote{push the current code and tag the release; the repository name may change to COFY}.
-\item \textbf{Author contribution.} \authornote{CRediT statement}
+\item \textbf{Code availability.} The code (system, network implementation, study tools), every configuration, seed and log, and the frozen confirmatory code with its SHA-256 records are available at \url{https://github.com/SalvatoreCapuozzo/COFY} under the GNU AGPL-3.0 licence, together with a one-command demonstration that runs a four-node federation over the network on sample images of the three use cases \authornote{push the current code and tag the release; the repository name may change to COFY}.
+\item \textbf{Author contribution.} Salvatore Capuozzo: Conceptualization, Methodology, Software, Validation, Formal analysis, Investigation, Data curation, Visualization, Writing -- original draft, Writing -- review \& editing. Stefano Marrone: Conceptualization, Supervision, Writing -- review \& editing. Carlo Sansone: Supervision, Writing -- review \& editing. All authors read and approved the final manuscript.
 \item \textbf{Use of generative AI.} The authors designed the system architecture, the study and its experiments. Claude Opus 5.5 (Anthropic) was used to draft the manuscript, to develop part of the code, and to automate the experimental runs (Section~\ref{sec:design}). The code it developed implements components conceived and designed by the authors, who also validated it. The authors reviewed and verified all content and take full responsibility for it.
 \end{itemize}
 
@@ -675,7 +672,7 @@ Federated object detection across sites that annotate different classes can be t
 \begin{appendices}
 
 \section{Reproducibility}\label{app:repro}
-Paths below are relative to the \texttt{cofy\_system} directory of the code release (\url{https://github.com/SalvatoreCapuozzo/DAFYOLO}) \authornote{tag the release commit that contains the frozen copy}.
+Paths below are relative to the \texttt{cofy\_system} directory of the code release (\url{https://github.com/SalvatoreCapuozzo/COFY}) \authornote{tag the release commit that contains the frozen copy}.
 
 \subsection{Data}
  DENTEX is converted to YOLO format by \texttt{tools/convert\_dentex.py}, which is lossless in images and boxes. WBC is converted by \texttt{tools/coco\_to\_yolo.py}. Every dataset is split by \texttt{tools/split\_dataset\_into\_nodes.py --split-mode global --n-nodes 4 --seed 0 --val-frac 0.2}. On a new machine, \texttt{tools/rebuild\_study\_data.py} re-runs the split with these arguments. It then checks all 138 fingerprints of the registered datasets against \texttt{analysis/study\_manifest.json} (SHA-256 \texttt{708fde22\ldots{}b5a650}).

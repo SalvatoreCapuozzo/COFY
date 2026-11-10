@@ -11,7 +11,7 @@ from ultralytics import YOLO
 from server_paths import UPLOAD_DIR, GLOBAL_MODEL_DIR, PROCESSED_DIR
 # --- Server Config ---
 # Paths come from server_paths.yaml (macos_laptop / linux_gpu_box), picked
-# automatically by OS or via DAFYOLO_SERVER_PROFILE -- see server_paths.py.
+# automatically by OS or via COFY_SERVER_PROFILE -- see server_paths.py.
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(GLOBAL_MODEL_DIR, exist_ok=True)
@@ -494,7 +494,7 @@ class FLServer:
 
 def run_server():
     print("=" * 52)
-    print("  🏆  DAFYOLO FEDERATED LEARNING SERVER (v2)  🏆  ")
+    print("  🏆  COFY FEDERATED LEARNING SERVER (v2)  🏆  ")
     print("=" * 52)
     print("\nSelect aggregation strategy:")
     print("  [1] FedHead  — Head FedAvg + class injection  ← RECOMMENDED")

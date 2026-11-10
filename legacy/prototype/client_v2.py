@@ -20,7 +20,7 @@ SSH_PORT = 22
 SSH_USER = os.getenv("USERNAME")
 SSH_PASSWORD = os.getenv("PASSWORD")
 # Paths on the SSH server -- from server_paths.yaml (macos_laptop /
-# linux_gpu_box), picked automatically by OS or via DAFYOLO_SERVER_PROFILE.
+# linux_gpu_box), picked automatically by OS or via COFY_SERVER_PROFILE.
 from server_paths import UPLOAD_DIR as SERVER_UPLOAD_DIR, GLOBAL_MODEL_DIR as SERVER_DOWNLOAD_DIR
 
 # ==============================================================================
@@ -540,7 +540,7 @@ def validate_and_compare():
 
 if __name__ == "__main__":
     while True:
-        print("\n=== DAFYOLO Federated Learning Client (v2) ===")
+        print("\n=== COFY Federated Learning Client (v2) ===")
         print("1. Train a new model and send weights to server")
         print("2. Send EXISTING weights to server (skip training)")
         print("3. Download Global Model & Inspect Classes")

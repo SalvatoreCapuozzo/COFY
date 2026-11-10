@@ -1,15 +1,15 @@
 # Filesystem locations used by the legacy federated client/server scripts:
 # client.py, client_v2.py, server.py, server_v2.py, check_server_running.py,
 # diagnose_connection.py. These used to hardcode a Linux path
-# (/datadrive/DAFYOLO/...) that only exists on the remote GPU box, so they
+# (/datadrive/COFY/...) that only exists on the remote GPU box, so they
 # couldn't run locally on macOS.
 #
 # client_updated.py / server_updated.py already solved this differently (a
 # relative "server_node/..." path plus a local/remote CONNECTION_MODE switch)
 # and do NOT read this file.
 #
-# Pick a profile with the DAFYOLO_SERVER_PROFILE env var, e.g.:
-#   export DAFYOLO_SERVER_PROFILE=macos_laptop
+# Pick a profile with the COFY_SERVER_PROFILE env var, e.g.:
+#   export COFY_SERVER_PROFILE=macos_laptop
 # If unset, it's auto-detected from the OS (Darwin -> macos_laptop, else ->
 # linux_gpu_box) -- so this file works with zero setup on either machine.
 #
@@ -19,10 +19,10 @@
 linux_gpu_box:
   # Where server.py/server_v2.py itself runs, and where client.py/client_v2.py
   # upload to over SFTP -- the remote training box.
-  upload_dir:         /datadrive/DAFYOLO/uploads
-  global_model_dir:   /datadrive/DAFYOLO/global_model
-  processed_dir:      /datadrive/DAFYOLO/processed_models
-  server_log:         /datadrive/DAFYOLO/server.log
+  upload_dir:         /datadrive/COFY/uploads
+  global_model_dir:   /datadrive/COFY/global_model
+  processed_dir:      /datadrive/COFY/processed_models
+  server_log:         /datadrive/COFY/server.log
   # Source folder tools/split_dataset_into_nodes.py reads from (cofy_system).
   kfm_dataset_source: /home/salvatorecapuozzo/kfm_250423_subdataset/export
 

@@ -262,7 +262,7 @@ class FLServer:
 
 def run_server():
     print("=" * 52)
-    print("  🏆 DAFYOLO SERVER (v6 - Multi-Class Support) 🏆")
+    print("  🏆 COFY SERVER (v6 - Multi-Class Support) 🏆")
     print("=" * 52)
     print("Select Server Merging Strategy:")
     print("  [1] FedHead (Head Injection)")

@@ -13,11 +13,11 @@ from client_updated import SERVER_IP, SSH_PORT, SSH_USER, SSH_PASSWORD
 # This script SSHes into the remote server to check it, so the path it needs
 # is the *remote* box's profile, not local-OS auto-detection (which would
 # pick macos_laptop when run from a Mac even though the server is Linux).
-# Override with DAFYOLO_SERVER_PROFILE if the server itself isn't the
+# Override with COFY_SERVER_PROFILE if the server itself isn't the
 # linux_gpu_box profile below.
 import os
 from server_paths import load_profile
-SERVER_LOG = load_profile(os.getenv("DAFYOLO_SERVER_PROFILE", "linux_gpu_box"))["server_log"]
+SERVER_LOG = load_profile(os.getenv("COFY_SERVER_PROFILE", "linux_gpu_box"))["server_log"]
 
 print("🔍 Checking if server_updated.py is running...")
 

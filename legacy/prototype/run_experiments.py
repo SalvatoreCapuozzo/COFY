@@ -222,7 +222,7 @@ def validate_and_compare_headless(strategy, scenario_name, log_file, clients):
         f.write("=" * 50 + "\n")
 
 if __name__ == "__main__":
-    print("\n=== DAFYOLO Automated Experiments ===")
+    print("\n=== COFY Automated Experiments ===")
     print("How is your server running?")
     print("  [1] Remote Server")
     print("  [2] Local Server")
@@ -237,7 +237,7 @@ if __name__ == "__main__":
         client_updated.CONNECTION_MODE = 'remote'
 
     with open(RESULTS_FILE, "w") as f:
-        f.write(f"DAFYOLO ADVANCED EXPERIMENTS\nDate: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write(f"COFY ADVANCED EXPERIMENTS\nDate: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
 
     for scenario_name, clients in SCENARIOS.items():
         print(f"\n\n{'='*80}\n🚀 STARTING SCENARIO: {scenario_name}\n{'='*80}")

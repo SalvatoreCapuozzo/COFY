@@ -1,4 +1,4 @@
-# DAFYOLO System Analysis Report
+# COFY System Analysis Report
 
 ## Executive Summary
 Your federated learning system for YOLO object detection shows **critical architectural and implementation issues** that explain the poor experimental results. The global models achieve only 4-17% mAP@50 while local models achieve 30-87% mAP@50, indicating fundamental problems in the knowledge aggregation process.

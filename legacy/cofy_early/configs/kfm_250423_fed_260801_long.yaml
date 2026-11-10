@@ -48,7 +48,7 @@ federation:
                                   # forward passes from a second thread on the same
                                   # GPU) hung after ~19 min with zero further progress
                                   # for 19+ hours: a likely PyTorch/CUDA multi-thread
-                                  # deadlock, not a DAFYOLO logic bug. Serializing GPU
+                                  # deadlock, not a COFY logic bug. Serializing GPU
                                   # access removes that risk; async semantics (pull
                                   # before the semaphore, staleness tracking) still hold.
 

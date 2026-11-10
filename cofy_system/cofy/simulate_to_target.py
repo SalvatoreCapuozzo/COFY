@@ -309,7 +309,7 @@ def main():
         f"patience={trc.federated_patience} evals\n"
         f"[bold cyan]Global classes ({cfg.nc}):[/bold cyan] {cfg.global_classes}\n"
         f"[bold cyan]Session:[/bold cyan] {session_dir}",
-        title="[bold white]DAFYOLO — Train-to-Target[/bold white]",
+        title="[bold white]COFY — Train-to-Target[/bold white]",
     ))
 
     # ── report images/objects per class before starting, as requested ──────

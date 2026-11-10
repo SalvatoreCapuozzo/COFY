@@ -1,4 +1,4 @@
-<title>DAFYOLO Field Report</title>
+<title>COFY Field Report</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 
 <style>
@@ -318,7 +318,7 @@
 <header class="top">
   <div class="wrap">
     <div class="eyebrow">Federated detection · diagnostic pass</div>
-    <h1 class="title">Where DAFYOLO's performance actually goes</h1>
+    <h1 class="title">Where COFY's performance actually goes</h1>
     <p class="dek">A side-by-side of every merge strategy and both federation
     engines in this repository — why the legacy global model collapses to
     single-digit mAP, the one real-dataset run where the newer
@@ -326,7 +326,7 @@
     seven since that didn't reproduce it), and what it took to get a broken
     quickstart and six hardcoded Linux paths running on this Mac.</p>
     <div class="meta-row">
-      <span><b>Repo</b> DAFYOLO</span>
+      <span><b>Repo</b> COFY</span>
       <span><b>Prepared for</b> ipezzentidisagiati@gmail.com</span>
       <span><b>Date</b> 2026-08-19</span>
       <span><b>Test bench</b> MacBook · Apple M2 Pro · 16 GB RAM · macOS (arm64)</span>
@@ -370,7 +370,7 @@
     <div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title">Two systems living in one repo</h2></div>
     <div class="twocol">
       <div class="card">
-        <h3>Legacy DAFYOLO <span class="badge warn">6 merge strategies</span></h3>
+        <h3>Legacy COFY <span class="badge warn">6 merge strategies</span></h3>
         <p><code class="inline">client.py</code> → <code class="inline">client_updated.py</code> →
         <code class="inline">client_v2.py</code>, and the matching
         <code class="inline">server*.py</code> trio. A client trains a full YOLO
@@ -3442,7 +3442,7 @@ python3 -m cofy.simulate --config configs/example_federation.yaml --also-central
     persistence mechanism, correctly — <code class="inline">launchctl
     submit</code> is the same underlying mechanism scoped to one
     non-persistent, immediately-visible job instead. Verified with
-    <code class="inline">launchctl list | grep dafyolo</code> (shows the
+    <code class="inline">launchctl list | grep cofy</code> (shows the
     job, tracked by launchd) and <code class="inline">ps -o pid,ppid
     -p &lt;pid&gt;</code> (<code class="inline">PPID=1</code>, parent is
     launchd, never any shell in this session). Round 4's checkpoint
@@ -3480,7 +3480,7 @@ python3 -m cofy.simulate --config configs/example_federation.yaml --also-central
     (most likely a stale duplicate job registration surviving between
     conversation turns, though the exact mechanism was never fully
     pinned down — thorough cleanup of every <code class="inline">
-    com.dafyolo.*</code> label before the next relaunch resolved it
+    com.cofy.*</code> label before the next relaunch resolved it
     regardless).</p>
     <p><b>Root cause of the crash itself, confirmed by direct
     reproduction rather than guessed:</b> <code class="inline">FedYOLO/</code>
@@ -3797,7 +3797,7 @@ print(per_class_map50(metrics))
           <tr>
             <td><code class="inline">legacy/server.py</code> / <code class="inline">server_v2.py</code> / <code class="inline">client_v2.py</code></td>
             <td><span class="badge fix">fixed this pass</span></td>
-            <td class="wrap-cell">Hardcoded <code class="inline">/datadrive/DAFYOLO/...</code> — see §7 for the full list and <code class="inline">legacy/server_paths.yaml</code>/<code class="inline">server_paths.py</code>, which now replaces it, auto-picking a macOS or Linux profile. (<code class="inline">client.py</code>/<code class="inline">server.py</code>, the first-generation pair these superseded, were removed this pass — git-recoverable, see §8.)</td>
+            <td class="wrap-cell">Hardcoded <code class="inline">/datadrive/COFY/...</code> — see §7 for the full list and <code class="inline">legacy/server_paths.yaml</code>/<code class="inline">server_paths.py</code>, which now replaces it, auto-picking a macOS or Linux profile. (<code class="inline">client.py</code>/<code class="inline">server.py</code>, the first-generation pair these superseded, were removed this pass — git-recoverable, see §8.)</td>
           </tr>
           <tr>
             <td>Legacy dependency list</td>
@@ -3866,11 +3866,11 @@ print(per_class_map50(metrics))
       <table>
         <thead><tr><th>File</th><th>What was hardcoded</th><th>Now reads from</th></tr></thead>
         <tbody>
-          <tr><td><code class="inline">server.py</code> <span class="mono" style="color:var(--muted)">(removed)</span>, <code class="inline">server_v2.py</code></td><td class="wrap-cell"><code class="inline">UPLOAD_DIR</code>/<code class="inline">GLOBAL_MODEL_DIR</code>/<code class="inline">PROCESSED_DIR</code> = <code class="inline">/datadrive/DAFYOLO/{uploads,global_model,processed_models}</code></td><td class="wrap-cell"><code class="inline">legacy/server_paths.py</code></td></tr>
+          <tr><td><code class="inline">server.py</code> <span class="mono" style="color:var(--muted)">(removed)</span>, <code class="inline">server_v2.py</code></td><td class="wrap-cell"><code class="inline">UPLOAD_DIR</code>/<code class="inline">GLOBAL_MODEL_DIR</code>/<code class="inline">PROCESSED_DIR</code> = <code class="inline">/datadrive/COFY/{uploads,global_model,processed_models}</code></td><td class="wrap-cell"><code class="inline">legacy/server_paths.py</code></td></tr>
           <tr><td><code class="inline">client.py</code> <span class="mono" style="color:var(--muted)">(removed)</span>, <code class="inline">client_v2.py</code></td><td class="wrap-cell"><code class="inline">SERVER_UPLOAD_DIR</code>/<code class="inline">SERVER_DOWNLOAD_DIR</code> = same two <code class="inline">/datadrive/...</code> paths (the client's view of the server)</td><td class="wrap-cell"><code class="inline">legacy/server_paths.py</code></td></tr>
-          <tr><td><code class="inline">check_server_running.py</code></td><td class="wrap-cell"><code class="inline">cd /datadrive/DAFYOLO</code> and <code class="inline">tail /datadrive/DAFYOLO/server.log</code> in two print/exec strings</td><td class="wrap-cell"><code class="inline">legacy/server_paths.py</code> (<code class="inline">linux_gpu_box</code> profile by default — see note below)</td></tr>
-          <tr><td><code class="inline">diagnose_connection.py</code></td><td class="wrap-cell"><code class="inline">/datadrive/DAFYOLO/global_model/server_info.json</code> and <code class="inline">.../global_model.pt</code> in two SFTP checks</td><td class="wrap-cell"><code class="inline">legacy/server_paths.py</code> (same default)</td></tr>
-          <tr><td><code class="inline">VOC_local.yaml</code></td><td class="wrap-cell"><code class="inline">path: /home/salvatorecapuozzo/DAFYOLO/datasets/VOC</code></td><td class="wrap-cell">made relative (<code class="inline">datasets/VOC</code>) — no machine-specific variant needed, it only ever points at its own sibling folder</td></tr>
+          <tr><td><code class="inline">check_server_running.py</code></td><td class="wrap-cell"><code class="inline">cd /datadrive/COFY</code> and <code class="inline">tail /datadrive/COFY/server.log</code> in two print/exec strings</td><td class="wrap-cell"><code class="inline">legacy/server_paths.py</code> (<code class="inline">linux_gpu_box</code> profile by default — see note below)</td></tr>
+          <tr><td><code class="inline">diagnose_connection.py</code></td><td class="wrap-cell"><code class="inline">/datadrive/COFY/global_model/server_info.json</code> and <code class="inline">.../global_model.pt</code> in two SFTP checks</td><td class="wrap-cell"><code class="inline">legacy/server_paths.py</code> (same default)</td></tr>
+          <tr><td><code class="inline">VOC_local.yaml</code></td><td class="wrap-cell"><code class="inline">path: /home/salvatorecapuozzo/COFY/datasets/VOC</code></td><td class="wrap-cell">made relative (<code class="inline">datasets/VOC</code>) — no machine-specific variant needed, it only ever points at its own sibling folder</td></tr>
           <tr><td><code class="inline">cofy_system/README.md</code></td><td class="wrap-cell">one example command: <code class="inline">--dataset /home/salvatorecapuozzo/kfm_250423_subdataset/export</code></td><td class="wrap-cell">kept as the Linux example, with a second block added for <code class="inline">/Users/salvatorecapuozzo/kfm_250423_subdataset/export</code></td></tr>
         </tbody>
       </table>
@@ -3878,10 +3878,10 @@ print(per_class_map50(metrics))
     <h3>The config: <code class="inline">legacy/server_paths.yaml</code></h3>
     <p>One file, two profiles — duplicate the block for any other machine you add:</p>
     <pre>linux_gpu_box:
-  upload_dir:         /datadrive/DAFYOLO/uploads
-  global_model_dir:   /datadrive/DAFYOLO/global_model
-  processed_dir:      /datadrive/DAFYOLO/processed_models
-  server_log:         /datadrive/DAFYOLO/server.log
+  upload_dir:         /datadrive/COFY/uploads
+  global_model_dir:   /datadrive/COFY/global_model
+  processed_dir:      /datadrive/COFY/processed_models
+  server_log:         /datadrive/COFY/server.log
   kfm_dataset_source: /home/salvatorecapuozzo/kfm_250423_subdataset/export
 
 macos_laptop:
@@ -3893,7 +3893,7 @@ macos_laptop:
     <p style="font-size:13px;color:var(--muted);"><code class="inline">server_paths.py</code>
     picks a profile automatically (<code class="inline">Darwin</code> →
     <code class="inline">macos_laptop</code>, else <code class="inline">linux_gpu_box</code>)
-    or from <code class="inline">DAFYOLO_SERVER_PROFILE</code> — except
+    or from <code class="inline">COFY_SERVER_PROFILE</code> — except
     <code class="inline">check_server_running.py</code> and
     <code class="inline">diagnose_connection.py</code>, which SSH <i>into</i> the
     remote box to inspect it, so they default to <code class="inline">linux_gpu_box</code>
@@ -3919,7 +3919,7 @@ macos_laptop:
             <td class="wrap-cell">Was two lines (a title and an empty "How to use" heading). Now describes both systems, points to <code class="inline">legacy/</code> vs. <code class="inline">cofy_system/</code>, and links each one's own <code class="inline">requirements.txt</code>.</td>
           </tr>
           <tr>
-            <td><code class="inline">cofy_system/DAFYOLO_system_description.md</code></td>
+            <td><code class="inline">legacy/cofy_early/early_system_description.md</code></td>
             <td><span class="badge good">accurate</span></td>
             <td class="wrap-cell">Checked against current <code class="inline">server.py</code> / <code class="inline">model.py</code>: staleness formula, delta-aggregation logic, class-conditional averaging and the pseudo-label mechanism all match the shipped code. The most trustworthy document in the repo.</td>
           </tr>

@@ -1,4 +1,4 @@
-# DAFYOLO - Critical Fixes Implementation Guide
+# COFY - Critical Fixes Implementation Guide
 
 ## ✅ Priority 1: Remove Duplicate Training (COMPLETED)
 

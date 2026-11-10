@@ -154,7 +154,7 @@ def _print_map_table(history: list[dict], global_classes: list[str]) -> None:
     if not history:
         return
 
-    table = Table(title="📈  DAFYOLO — Live mAP History", show_lines=True)
+    table = Table(title="📈  COFY — Live mAP History", show_lines=True)
     table.add_column("Step",      style="cyan",  no_wrap=True)
     table.add_column("mAP50",     style="bold green")
     table.add_column("mAP50-95",  style="bold yellow")

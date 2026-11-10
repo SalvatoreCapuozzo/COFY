@@ -167,14 +167,14 @@ two WBC nodes, two cycles each):
 ## 4. Requirements
 
 **Every machine (server and nodes)**
-- This repository (`cofy_system/`) and the `dafyolo` Python environment
+- This repository (`cofy_system/`) and the `cofy` Python environment
   (see the repository README, section 1, or the study handoff: Python 3.10, PyTorch, `ultralytics==8.4.84`, and
   `requirements.txt`, which includes `fastapi`, `uvicorn`,
   `python-multipart`, `requests`).
 - Commands are run from inside `cofy_system/`:
   ```bash
-  cd ~/DAFYOLO/cofy_system
-  conda activate dafyolo
+  cd ~/COFY/cofy_system
+  conda activate cofy
   ```
 
 **Server machine**
@@ -198,7 +198,7 @@ two WBC nodes, two cycles each):
 ### 5.1 Start it
 
 ```bash
-cd ~/DAFYOLO/cofy_system && conda activate dafyolo
+cd ~/COFY/cofy_system && conda activate cofy
 python -m cofy.net.server_app --port 8900
 ```
 
@@ -252,7 +252,7 @@ Each node operator, on **their own** machine:
 
 1. Start the personal client (it listens only on that machine):
    ```bash
-   cd ~/DAFYOLO/cofy_system && conda activate dafyolo
+   cd ~/COFY/cofy_system && conda activate cofy
    python -m cofy.net.client_app --port 8901
    ```
 2. Open **http://127.0.0.1:8901** in a browser **on that same machine**

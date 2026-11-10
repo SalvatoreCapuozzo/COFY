@@ -17,10 +17,10 @@ While it runs, open the **server dashboard** (`http://127.0.0.1:8900`) and the f
 
 ## Run it online, free
 
-- **Google Colab** (free GPU, Google account): [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SalvatoreCapuozzo/DAFYOLO/blob/master/cofy_system/demo/COFY_demo.ipynb)
+- **Google Colab** (free GPU, Google account): [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SalvatoreCapuozzo/COFY/blob/master/cofy_system/demo/COFY_demo.ipynb)
   The notebook installs the code, starts the federation and gives links to the server dashboard and the four
   client pages.
-- **GitHub Codespaces** (free monthly hours, GitHub account, CPU): [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/SalvatoreCapuozzo/DAFYOLO)
+- **GitHub Codespaces** (free monthly hours, GitHub account, CPU): [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/SalvatoreCapuozzo/COFY)
   Wait for the setup to finish (a few minutes), then run
   `cd cofy_system && python demo/run_demo.py --use-case wbc --keep-open`;
   the dashboards open from the *Ports* tab (8900 is the server, 8901–8904 the nodes).
@@ -32,7 +32,7 @@ running, because every visitor starts a real training run; each person runs thei
 ## Run it on your machine
 
 ```bash
-git clone https://github.com/SalvatoreCapuozzo/DAFYOLO.git && cd DAFYOLO/cofy_system
+git clone https://github.com/SalvatoreCapuozzo/COFY.git && cd COFY/cofy_system
 pip install -r requirements.txt "ultralytics==8.4.84"
 python demo/run_demo.py --use-case wbc --scheme sequential
 ```

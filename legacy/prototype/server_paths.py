@@ -7,7 +7,7 @@ Usage:
     from server_paths import UPLOAD_DIR, GLOBAL_MODEL_DIR, PROCESSED_DIR, SERVER_LOG
 
 Override the auto-detected profile with:
-    export DAFYOLO_SERVER_PROFILE=linux_gpu_box   # or macos_laptop
+    export COFY_SERVER_PROFILE=linux_gpu_box   # or macos_laptop
 
 Note on macos_laptop's relative paths: UPLOAD_DIR/GLOBAL_MODEL_DIR/PROCESSED_DIR
 are anchored to this file's own directory (see _anchor() below), which is
@@ -45,17 +45,17 @@ def _anchor(path: str) -> str:
 
 
 def load_profile(name: str | None = None) -> dict:
-    name = name or os.getenv("DAFYOLO_SERVER_PROFILE") or _default_profile()
+    name = name or os.getenv("COFY_SERVER_PROFILE") or _default_profile()
     data = yaml.safe_load(_CONFIG_PATH.read_text())
     if name not in data:
         raise ValueError(
-            f"Unknown DAFYOLO_SERVER_PROFILE '{name}' -- expected one of "
+            f"Unknown COFY_SERVER_PROFILE '{name}' -- expected one of "
             f"{list(data)} (edit {_CONFIG_PATH.name} to add a new machine)."
         )
     return data[name]
 
 
-_PROFILE_NAME = os.getenv("DAFYOLO_SERVER_PROFILE") or _default_profile()
+_PROFILE_NAME = os.getenv("COFY_SERVER_PROFILE") or _default_profile()
 _PATHS = load_profile(_PROFILE_NAME)
 
 UPLOAD_DIR = _anchor(_PATHS["upload_dir"])

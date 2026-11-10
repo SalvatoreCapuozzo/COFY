@@ -111,7 +111,7 @@ Results per experiment: section 6.
 ## 5. Running one experiment, machine by machine
 
 Example: **E1**, WBC with CWT. For another experiment change the config, the room id and the use case
-of the data folders. Everything is run from `cofy_system/` with `conda activate dafyolo`.
+of the data folders. Everything is run from `cofy_system/` with `conda activate cofy`.
 
 **M1 — server** (once; it keeps running across experiments):
 ```bash

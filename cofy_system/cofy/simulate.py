@@ -199,7 +199,7 @@ def main():
         f"[bold cyan]--mode:[/bold cyan] {args.mode}\n"
         f"[bold cyan]Global classes ({cfg.nc}):[/bold cyan] {cfg.global_classes}\n"
         f"[bold cyan]Nodes:[/bold cyan] {[n.name for n in cfg.nodes]}",
-        title="[bold white]DAFYOLO — Federation Setup[/bold white]",
+        title="[bold white]COFY — Federation Setup[/bold white]",
     ))
     for node in cfg.nodes:
         log.info(f"[bold blue]Node {node.name}[/bold blue] owns: {node.owned_classes}")
