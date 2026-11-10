@@ -1,0 +1,407 @@
+<title>How Much Does Federating Cost</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --bg-page:      #f4f5f8;
+    --surface:      #ffffff;
+    --surface-2:    #eceef3;
+    --ink:          #12141c;
+    --ink-2:        #454b5a;
+    --muted:        #838ba0;
+    --border:       rgba(18,20,28,0.11);
+    --border-soft:  rgba(18,20,28,0.06);
+    --accent:       #2a5bd6;
+    --accent-ink:   #17399e;
+    --accent-soft:  #e7edfc;
+    --accent-soft-b:#c9d7f8;
+    --code-bg:      #14161d;
+    --code-ink:     #e4e7ef;
+    --good:      #0ca30c; --good-soft: #e4f6e2; --good-bd: #b7e3ac;
+    --warn:      #b4790a; --warn-soft: #fdf1da; --warn-bd: #f0d59a;
+    --bad:       #c4382f; --bad-soft:  #fbe6e3; --bad-bd:  #f0b8b0;
+    --fix:       #6d3fc9; --fix-soft:  #f0e9fc; --fix-bd:  #d4c1f2;
+    --band:      rgba(42,91,214,0.08);
+    --band-bd:    rgba(42,91,214,0.35);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg-page:#0c0d11; --surface:#15171e; --surface-2:#1b1e27;
+      --ink:#eef0f6; --ink-2:#c2c7d6; --muted:#8891a3;
+      --border:rgba(255,255,255,0.12); --border-soft:rgba(255,255,255,0.07);
+      --accent:#6f97ea; --accent-ink:#a9c0f2; --accent-soft:#1c2745; --accent-soft-b:#2c3c66;
+      --code-bg:#0a0b0f; --code-ink:#dfe3ee;
+      --good:#35c55b; --good-soft:#123320; --good-bd:#1f5c37;
+      --warn:#f0ab2e; --warn-soft:#3a2c0d; --warn-bd:#6b5019;
+      --bad:#f0685c; --bad-soft:#3a1712; --bad-bd:#6e2a22;
+      --fix:#b494ec; --fix-soft:#241a3d; --fix-bd:#46356f;
+      --band: rgba(111,151,234,0.10);
+      --band-bd: rgba(111,151,234,0.4);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg-page:#0c0d11; --surface:#15171e; --surface-2:#1b1e27;
+    --ink:#eef0f6; --ink-2:#c2c7d6; --muted:#8891a3;
+    --border:rgba(255,255,255,0.12); --border-soft:rgba(255,255,255,0.07);
+    --accent:#6f97ea; --accent-ink:#a9c0f2; --accent-soft:#1c2745; --accent-soft-b:#2c3c66;
+    --code-bg:#0a0b0f; --code-ink:#dfe3ee;
+    --good:#35c55b; --good-soft:#123320; --good-bd:#1f5c37;
+    --warn:#f0ab2e; --warn-soft:#3a2c0d; --warn-bd:#6b5019;
+    --bad:#f0685c; --bad-soft:#3a1712; --bad-bd:#6e2a22;
+    --fix:#b494ec; --fix-soft:#241a3d; --fix-bd:#46356f;
+    --band: rgba(111,151,234,0.10);
+    --band-bd: rgba(111,151,234,0.4);
+    color-scheme: dark;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg-page); color:var(--ink);
+    font-family:"Source Serif 4",Georgia,serif; font-size:16.5px; line-height:1.6; }
+  h1,h2,h3{ font-family:"Archivo","Arial Narrow",sans-serif; color:var(--ink); text-wrap:balance; letter-spacing:-0.01em; }
+  .mono, code, table, .stat-val, .badge, th, .tick, .dot-label{ font-family:"IBM Plex Mono",ui-monospace,monospace; }
+  a{ color:var(--accent-ink); }
+  .wrap{ max-width:980px; margin:0 auto; padding:0 28px 100px; }
+
+  header.top{ border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--surface-2),var(--bg-page) 140%); padding:36px 0 28px; }
+  .eyebrow{ font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+  h1.title{ font-size:32px; margin:0 0 12px; }
+  p.dek{ color:var(--ink-2); font-size:17px; max-width:640px; margin:0; }
+
+  section{ padding:34px 0; border-bottom:1px solid var(--border-soft); }
+  section:last-of-type{ border-bottom:none; }
+  .sec-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:14px; }
+  .sec-title{ font-size:20px; margin:0; }
+
+  .verdict{ display:flex; gap:16px; flex-wrap:wrap; margin:18px 0 24px; }
+  .verdict .card{ flex:1; min-width:220px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+  .verdict .card.yes{ border-color:var(--good-bd); background:var(--good-soft); }
+  .verdict .card.no{ border-color:var(--bad-bd); background:var(--bad-soft); }
+  .verdict .label{ font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:6px; }
+  .verdict .val{ font-family:"Archivo",sans-serif; font-weight:700; font-size:19px; margin-bottom:4px; }
+  .verdict .sub{ font-size:13.5px; color:var(--ink-2); }
+
+  .chart-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px 22px 14px; }
+  .chart-title{ font-family:"Archivo",sans-serif; font-weight:700; font-size:15px; margin:0 0 2px; }
+  .chart-sub{ font-size:12.5px; color:var(--muted); margin:0 0 14px; }
+  .legend{ display:flex; gap:18px; align-items:center; font-size:12.5px; color:var(--ink-2); margin-bottom:6px; flex-wrap:wrap; }
+  .legend .item{ display:flex; align-items:center; gap:6px; }
+  .legend .sw{ width:11px; height:11px; border-radius:50%; display:inline-block; }
+  .legend .sw.sync{ background:var(--accent); }
+  .legend .sw.async-fill{ background:var(--warn); }
+  .legend .band-sw{ width:16px; height:9px; background:var(--band); border:1px solid var(--band-bd); border-radius:2px; display:inline-block; }
+
+  svg text{ font-family:"IBM Plex Mono",monospace; fill:var(--muted); }
+  svg .row-label{ font-family:"IBM Plex Mono",monospace; fill:var(--ink-2); font-size:11.5px; }
+  svg .row-label.flag{ fill:var(--bad); font-weight:600; }
+  svg .axis-label{ font-size:10.5px; fill:var(--muted); }
+  svg .gridline{ stroke:var(--border); stroke-width:1; }
+  svg .refline{ stroke:var(--ink-2); stroke-width:1.2; stroke-dasharray:3,3; }
+  svg .band{ fill:var(--band); }
+  svg .band-edge{ stroke:var(--band-bd); stroke-width:1; stroke-dasharray:2,2; }
+  svg .dot-sync{ fill:var(--accent); }
+  svg .dot-async{ fill:var(--warn); }
+  svg .dot-sync, svg .dot-async{ cursor:pointer; }
+  svg .connector{ stroke:var(--border); stroke-width:1.4; }
+  svg .whisker-sync{ stroke:var(--accent); stroke-opacity:.45; stroke-width:2; }
+  svg .whisker-async{ stroke:var(--warn); stroke-opacity:.45; stroke-width:2; }
+  svg .whisker-sync, svg .whisker-async{ cursor:pointer; }
+
+  #tooltip{ position:fixed; pointer-events:none; background:var(--ink); color:var(--bg-page); font-family:"IBM Plex Mono",monospace;
+    font-size:12px; padding:7px 10px; border-radius:6px; opacity:0; transition:opacity .1s; z-index:50; white-space:nowrap; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th{ text-align:left; color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.03em; padding:7px 10px; border-bottom:1px solid var(--border); }
+  td{ padding:7px 10px; border-bottom:1px solid var(--border-soft); font-family:"IBM Plex Mono",monospace; }
+  .tbl-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; }
+  .num{ text-align:right; }
+  .flagrow td{ background:var(--bad-soft); }
+
+  details{ margin-top:16px; }
+  summary{ cursor:pointer; font-size:13px; color:var(--accent-ink); font-family:"IBM Plex Mono",monospace; }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:16px 0; }
+  .stat-grid .box{ background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  .stat-grid .box .k{ font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-family:"IBM Plex Mono",monospace; margin-bottom:6px; }
+  .stat-grid .box .v{ font-family:"IBM Plex Mono",monospace; font-size:19px; font-weight:600; }
+  .stat-grid .box .v .sd{ font-size:13px; color:var(--muted); font-weight:400; }
+
+  .steps{ counter-reset:step; list-style:none; padding:0; margin:16px 0 0; }
+  .steps li{ counter-increment:step; padding:14px 0 14px 42px; position:relative; border-top:1px solid var(--border-soft); }
+  .steps li:first-child{ border-top:none; }
+  .steps li::before{ content:counter(step); position:absolute; left:0; top:14px; width:26px; height:26px; border-radius:50%;
+    background:var(--accent-soft); color:var(--accent-ink); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; }
+  .steps b{ font-family:"Archivo",sans-serif; }
+
+  code.inline{ background:var(--surface-2); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:0.92em; }
+  footer{ padding:26px 0 10px; color:var(--muted); font-size:12.5px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+</style>
+
+<div id="tooltip"></div>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">DAFYOLO &middot; statistical stability check</div>
+    <h1 class="title">Does federating cost a predictable amount, or does it depend on what you train?</h1>
+    <p class="dek">Every Fed:Cent and Fed:Oracle ratio from every run so far (19 configs,
+    up to 4 architectures, 4 scales, both modes) — checked for whether they cluster
+    into a band you could actually bet on, or scatter too wide to promise anything.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="sec-head"><h2 class="sec-title">The short answer</h2></div>
+    <div class="verdict">
+      <div class="card yes">
+        <div class="label">Async mode</div>
+        <div class="val">Yes — a real, tight band</div>
+        <div class="sub">94.1% ± 8.3 Fed:Cent across <i>every</i> architecture tried, including the one that struggles under sync. Individual runs ranged 81–114%, never below 81%.</div>
+      </div>
+      <div class="card no">
+        <div class="label">Sync mode</div>
+        <div class="val">No — architecture-dependent</div>
+        <div class="sub">88.0% ± 21.0 Fed:Cent overall — but that spread is almost entirely one architecture (YOLOE) landing at 50–63% while everything else lands 78–113%.</div>
+      </div>
+    </div>
+    <p style="color:var(--ink-2);font-size:14.5px;">So: a confident "you won't lose more than
+    about 15-20 points under async" is defensible from what's been run. The same claim for
+    sync mode isn't — it depends on whether the target architecture's detect head behaves
+    like YOLOE's or like everything else's, and that isn't knowable in advance without
+    running it. See "what this can't tell you yet" below before treating either number as
+    universal — both are still measured on one dataset.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="sec-title">Every run, plotted</h2></div>
+    <div class="chart-card">
+      <p class="chart-title">Federated mAP50 as a % of centralized, by config</p>
+      <p class="chart-sub">Sorted by async ratio (the more stable series). Shaded band = the
+      individual-run range for async excluding YOLOE (89–114%) — a visual "does this point
+      leave the expected zone" check. A row now reseeded to 3 seeds plots its <b>mean</b> as
+      the dot, with a thin whisker spanning the min–max across seeds. Hover any point/whisker
+      for the exact run(s).</p>
+      <div class="legend">
+        <span class="item"><span class="sw sync"></span> sync</span>
+        <span class="item"><span class="sw async-fill"></span> async</span>
+        <span class="item"><span class="band-sw"></span> async range, excl. YOLOE (89–114%)</span>
+        <span class="item"><svg width="20" height="10" style="overflow:visible;"><line x1="2" y1="5" x2="18" y2="5" stroke="var(--accent)" stroke-opacity=".45" stroke-width="2"></line><line x1="2" y1="2" x2="2" y2="8" stroke="var(--accent)" stroke-opacity=".45" stroke-width="2"></line><line x1="18" y1="2" x2="18" y2="8" stroke="var(--accent)" stroke-opacity=".45" stroke-width="2"></line></svg> seed min–max (dot = mean)</span>
+        <span class="item" style="color:var(--bad)">● red label = YOLOE (the outlier architecture)</span>
+      </div>
+      <svg id="chart-cent" viewBox="0 0 900 620" role="img" aria-label="Dot plot of federated-to-centralized mAP50 ratio for 19 model configs, sync and async legs, showing async ratios clustering tightly between 81 and 114 percent while sync ratios for the YOLOE architecture drop as low as 50 percent"></svg>
+    </div>
+
+    <div class="chart-card" style="margin-top:16px;">
+      <p class="chart-title">Federated mAP50 as a % of the true full-annotation oracle ceiling</p>
+      <p class="chart-sub">The harder, more honest number — what fraction of a hypothetical
+      fully-labeled model each config actually recovers. 17 of 19 configs have this; the two
+      without (yolov8s@s480, yolo26-classic@s480) predate the oracle baseline being built.</p>
+      <div class="legend">
+        <span class="item"><span class="sw sync"></span> sync</span>
+        <span class="item"><span class="sw async-fill"></span> async</span>
+        <span class="item"><span class="band-sw"></span> async range, excl. YOLOE (66–85%)</span>
+      </div>
+      <svg id="chart-oracle" viewBox="0 0 900 560" role="img" aria-label="Dot plot of federated-to-oracle mAP50 ratio for 17 model configs, sync and async legs, showing async ratios clustering between 66 and 85 percent while sync ratios for YOLOE drop as low as 38 percent"></svg>
+    </div>
+
+    <details>
+      <summary>Show the underlying numbers as a table</summary>
+      <div class="tbl-wrap" style="margin-top:10px;">
+        <table>
+          <thead><tr><th>Config</th><th class="num">Sync c%</th><th class="num">Sync o%</th><th class="num">Async c%</th><th class="num">Async o%</th></tr></thead>
+          <tbody id="data-table"></tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="sec-title">The statistics behind that verdict</h2></div>
+    <div class="stat-grid">
+      <div class="box"><div class="k">Async Fed:Cent, all 19</div><div class="v">94.1% <span class="sd">± 8.3</span></div></div>
+      <div class="box"><div class="k">Async Fed:Cent, excl. YOLOE (n=14)</div><div class="v">97.6% <span class="sd">± 6.5</span></div></div>
+      <div class="box"><div class="k">Sync Fed:Cent, all 16</div><div class="v">88.0% <span class="sd">± 21.0</span></div></div>
+      <div class="box"><div class="k">Sync Fed:Cent, excl. YOLOE (n=12)</div><div class="v">98.6% <span class="sd">± 11.6</span></div></div>
+    </div>
+    <p style="font-size:14.5px;color:var(--ink-2);">95% confidence interval for the async
+    Fed:Cent <i>mean</i> (not the individual-run range shown on the chart): <b>[89.9%,
+    98.2%]</b> across all 19 configs, <b>[93.7%, 101.6%]</b> excluding YOLOE — both computed
+    with a t-distribution at the relevant degrees of freedom, not eyeballed. YOLOE's own sync
+    legs are tight <i>among themselves</i> (56.2% ± 4.7) — this isn't sync being noisy, it's
+    sync being <i>consistently</i> worse specifically for YOLOE's open-vocabulary detect head,
+    a real architectural interaction rather than random variance.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="sec-title">What this can't tell you yet</h2></div>
+    <div class="verdict">
+      <div class="card no">
+        <div class="label">Zero dataset variation</div>
+        <div class="val">All 19 configs, 1 dataset</div>
+        <div class="sub">Every single run — every architecture, every scale, both modes — trained on the exact same 12-class kfm_250423_clean12 split, same 4-node ownership, same balanced_fraction. This can only speak to "does the ratio hold across models on <i>this</i> dataset." It says nothing about a different class count, class balance, or node-split shape.</div>
+      </div>
+      <div class="card no">
+        <div class="label">Reseeding in progress, 1/9 done</div>
+        <div class="val">N=1 run for 18 of 19 configs still</div>
+        <div class="sub">A reseed matrix (2 extra seeds each, for the 9 main-table configs) is running via <code class="inline">run_matrix.py</code> — paused by hand after its first config. yolo26-classic@l640 now has real 3-seed data (see its whisker on the chart above): sync ratio spans 95.7–109% (mean 100.5%), async spans 85.0–100.5% (mean 93.8%) — a real, non-trivial spread, wider on sync. The other 18 configs still carry unmeasured seed-noise in their single point estimate.</div>
+      </div>
+      <div class="card no">
+        <div class="label">Small architecture count</div>
+        <div class="val">4 genuinely distinct designs</div>
+        <div class="sub">19 configs sounds like a lot, but they're 4 detect-head designs (YOLOv8, YOLO26-classic, YOLO26 end-to-end, YOLOE) at various scales — scale variants aren't independent samples for an "any model" claim the way a 5th genuinely different architecture would be.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 class="sec-title">What to run next, to actually earn a cross-dataset claim</h2></div>
+    <ol class="steps">
+      <li><b>A second, genuinely different dataset.</b> Not a resample of the same source images — a different class count and a different class-imbalance shape, run through at least the flagship architecture (yolo26-classic) and the outlier (YOLOE), both modes. This is the single highest-value next step: right now there is <i>no</i> evidence either way for dataset generalization, since it's the one variable that has never moved.</li>
+      <li><b>2-3 seeds on a handful of configs</b> spanning the range already seen (a strong sync config, a weak one, an async one) — enough to separate real architecture-driven variance from the seed-noise already documented (the async non-determinism callout in the current-state report) without reseeding all 19.</li>
+      <li><b>One more genuinely distinct architecture</b> if one becomes available, ideally with a different aggregation-relevant property than the current four (e.g. an anchor-based or transformer-based detector) — the current four-architecture base is enough to trust the async band cautiously, not enough to call it settled.</li>
+    </ol>
+    <p style="font-size:13.5px;color:var(--muted);margin-top:14px;">Full leaderboard and every
+    individual result this analysis draws from: <a href="https://claude.ai/code/artifact/caa25a33-1b24-4b0e-be7d-6fcde03d54a4" target="_blank" rel="noopener">DAFYOLO current state</a>.
+    Full run history: <a href="https://claude.ai/code/artifact/2a78ddc2-3ee6-41ce-987f-1328dc4005fa" target="_blank" rel="noopener">field report</a>.</p>
+  </section>
+
+  <footer>
+    <span>kfm_250423_clean12 &middot; 12 classes &middot; 19 configs, 34 sync/async legs</span>
+    <span>Ratios computed from each run's own summary.json, verified individually before this page was built</span>
+  </footer>
+</div>
+
+<script>
+// A cell is either a plain number (single run) or an array of per-seed
+// values (this config has been reseeded) -- stat() below normalizes
+// both into {mean, min, max, n} so the chart/table code never branches
+// on which shape it got.
+const DATA = [
+  // Reseeded 2026-09-01: seed0 is the value already on the leaderboard
+  // (from kfm_250423_clean12_federation_yolo26/yolo26_sync_l640_20ep and
+  // its async sibling); seed1/seed2 are real cofy.simulate runs from
+  // the reseed matrix (configs/kfm12_yolo26_{sync,async}_l640_20ep_seed{1,2}.yaml),
+  // each ratio computed from that run's OWN matched centralized+oracle
+  // pair, not mixed across runs.
+  {name:"yolo26-classic@l640", flag:false, sc:[109,95.7,96.7], so:[83,90.9,79.2], ac:[96,85.0,100.5], ao:[72,80.7,82.3]},
+  {name:"yolo26-e2e@x640",     flag:false, sc:102, so:87, ac:99, ao:85},
+  {name:"yolo26-classic@x640", flag:false, sc:113, so:82, ac:114, ao:82},
+  {name:"yolov8m@640",         flag:false, sc:108, so:82, ac:99, ao:75},
+  {name:"yolov8l@l640",        flag:false, sc:112, so:81, ac:105, ao:77},
+  {name:"yolo26-e2e@l640",     flag:false, sc:87,  so:77, ac:91, ao:80},
+  {name:"yolo26-classic@m640", flag:false, sc:98,  so:76, ac:98, ao:75},
+  {name:"yolo26-e2e@m480",     flag:false, sc:91,  so:68, ac:98, ao:74},
+  {name:"yolo26-e2e@s640",     flag:false, sc:82,  so:69, ac:90, ao:76},
+  {name:"yolov8s@s480",        flag:false, sc:109, so:null, ac:100, ao:null},
+  {name:"yolo26-classic@s480", flag:false, sc:94,  so:null, ac:103, ao:null},
+  {name:"yolov8m@m480",        flag:false, sc:null,so:null, ac:94, ao:73},
+  {name:"yolo26-e2e@s480",     flag:false, sc:78,  so:60, ac:91, ao:71},
+  {name:"yolov8s@s640",        flag:false, sc:null,so:null, ac:89, ao:66},
+  {name:"yoloe@l640",          flag:true,  sc:63,  so:55, ac:84, ao:73},
+  {name:"yoloe@m640",          flag:true,  sc:57,  so:46, ac:83, ao:67},
+  {name:"yoloe@s640",          flag:true,  sc:null,so:null, ac:84, ao:62},
+  {name:"yoloe@m480",          flag:true,  sc:50,  so:39, ac:88, ao:68},
+  {name:"yoloe@s480",          flag:true,  sc:55,  so:38, ac:81, ao:56},
+];
+
+// Normalize a cell (plain number, null, or an array of per-seed values)
+// into {mean, min, max, n} -- null passes through as null so every
+// existing null-check downstream keeps working unchanged.
+function stat(v) {
+  if (v === null || v === undefined) return null;
+  const arr = Array.isArray(v) ? v : [v];
+  const mean = arr.reduce((a,b) => a+b, 0) / arr.length;
+  return { mean, min: Math.min(...arr), max: Math.max(...arr), n: arr.length };
+}
+
+// sort by async cent descending (primary, most stable metric) -- use the
+// mean when a row has been reseeded, so sort order doesn't jump around
+// depending on which single seed happened to land in DATA
+const rows = [...DATA].sort((a,b) => (stat(b.ac)?.mean ?? -Infinity) - (stat(a.ac)?.mean ?? -Infinity));
+
+// Each row plots a sync marker + an async marker on the same x-scale
+// (ratio %), connected by a thin line, with a shaded reference band
+// behind them. A single-run cell draws its usual solid dot; a reseeded
+// cell (n>1) additionally draws a thin min-max whisker behind the dot,
+// which then sits at the seed MEAN rather than a single raw value.
+function buildCentOracleChart(svgId, syncKey, asyncKey, xMin, xMax, bandLo, bandHi, unit) {
+  const svg = document.getElementById(svgId);
+  const rowH = 28, topPad = 24, leftPad = 150, rightPad = 30, W = 900;
+  const items = rows.filter(r => r[syncKey] !== null || r[asyncKey] !== null);
+  const H = topPad + items.length * rowH + 44;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const plotW = W - leftPad - rightPad;
+  const x = (v) => leftPad + ((v - xMin) / (xMax - xMin)) * plotW;
+
+  let html = "";
+  html += `<rect class="band" x="${x(bandLo)}" y="${topPad-8}" width="${x(bandHi)-x(bandLo)}" height="${items.length*rowH+8}"></rect>`;
+  html += `<line class="band-edge" x1="${x(bandLo)}" x2="${x(bandLo)}" y1="${topPad-8}" y2="${topPad+items.length*rowH}"></line>`;
+  html += `<line class="band-edge" x1="${x(bandHi)}" x2="${x(bandHi)}" y1="${topPad-8}" y2="${topPad+items.length*rowH}"></line>`;
+  for (let g = Math.ceil(xMin/10)*10; g <= xMax; g += 10) {
+    html += `<line class="gridline" x1="${x(g)}" x2="${x(g)}" y1="${topPad-8}" y2="${topPad+items.length*rowH}"></line>`;
+    html += `<text class="axis-label" x="${x(g)}" y="${topPad+items.length*rowH+18}" text-anchor="middle">${g}%</text>`;
+  }
+  if (100 >= xMin && 100 <= xMax) {
+    html += `<line class="refline" x1="${x(100)}" x2="${x(100)}" y1="${topPad-8}" y2="${topPad+items.length*rowH}"></line>`;
+    html += `<text class="axis-label" x="${x(100)}" y="${topPad-12}" text-anchor="middle">100% = matches ${unit}</text>`;
+  }
+
+  function whisker(cls, s, y, label) {
+    if (s.n < 2) return "";
+    const x1 = x(s.min), x2 = x(s.max);
+    return `<line class="${cls}" x1="${x1}" x2="${x2}" y1="${y}" y2="${y}" data-label="${label}" data-val=""></line>` +
+           `<line class="${cls}" x1="${x1}" x2="${x1}" y1="${y-4}" y2="${y+4}" data-label="${label}" data-val=""></line>` +
+           `<line class="${cls}" x1="${x2}" x2="${x2}" y1="${y-4}" y2="${y+4}" data-label="${label}" data-val=""></line>`;
+  }
+
+  items.forEach((r, i) => {
+    const y = topPad + i * rowH + rowH/2;
+    html += `<text class="row-label${r.flag ? ' flag':''}" x="${leftPad-12}" y="${y+4}" text-anchor="end">${r.name}</text>`;
+    const sv = stat(r[syncKey]), av = stat(r[asyncKey]);
+    if (sv && av) html += `<line class="connector" x1="${x(sv.mean)}" x2="${x(av.mean)}" y1="${y}" y2="${y}"></line>`;
+    if (sv) html += whisker("whisker-sync", sv, y, `${r.name} sync (n=${sv.n})`);
+    if (av) html += whisker("whisker-async", av, y, `${r.name} async (n=${av.n})`);
+    if (sv) {
+      const lbl = sv.n > 1 ? `${r.name} sync — mean of ${sv.n} seeds, range ${sv.min.toFixed(1)}–${sv.max.toFixed(1)}` : `${r.name} sync`;
+      html += `<circle class="dot-sync" cx="${x(sv.mean)}" cy="${y}" r="5.5" data-label="${lbl}" data-val="${sv.mean.toFixed(1)}"></circle>`;
+    }
+    if (av) {
+      const lbl = av.n > 1 ? `${r.name} async — mean of ${av.n} seeds, range ${av.min.toFixed(1)}–${av.max.toFixed(1)}` : `${r.name} async`;
+      html += `<circle class="dot-async" cx="${x(av.mean)}" cy="${y}" r="5.5" data-label="${lbl}" data-val="${av.mean.toFixed(1)}"></circle>`;
+    }
+  });
+  svg.innerHTML = html;
+
+  const tip = document.getElementById("tooltip");
+  svg.querySelectorAll("circle, line[data-label]").forEach(c => {
+    c.addEventListener("mousemove", (e) => {
+      tip.textContent = c.dataset.val ? `${c.dataset.label}: ${c.dataset.val}%` : c.dataset.label;
+      tip.style.left = (e.clientX + 14) + "px";
+      tip.style.top = (e.clientY - 10) + "px";
+      tip.style.opacity = 1;
+    });
+    c.addEventListener("mouseleave", () => { tip.style.opacity = 0; });
+  });
+}
+
+buildCentOracleChart("chart-cent", "sc", "ac", 40, 120, 89, 114, "centralized");
+buildCentOracleChart("chart-oracle", "so", "ao", 30, 95, 66, 85, "oracle");
+
+// data table -- a reseeded cell prints "mean (n=N, min–max)"
+function fmtCell(v) {
+  const s = stat(v);
+  if (!s) return "—";
+  return s.n > 1 ? `${s.mean.toFixed(1)} <span style="color:var(--muted)">(n=${s.n}, ${s.min.toFixed(1)}–${s.max.toFixed(1)})</span>` : s.mean;
+}
+const tbody = document.getElementById("data-table");
+tbody.innerHTML = DATA.map(r => `
+  <tr class="${r.flag ? 'flagrow' : ''}">
+    <td>${r.name}</td>
+    <td class="num">${fmtCell(r.sc)}</td>
+    <td class="num">${fmtCell(r.so)}</td>
+    <td class="num">${fmtCell(r.ac)}</td>
+    <td class="num">${fmtCell(r.ao)}</td>
+  </tr>`).join("");
+</script>

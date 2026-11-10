@@ -1,0 +1,52 @@
+% COFY architecture (included by main.tex, Figure fig:architecture). Node colours as in Figure fig:schemes;
+% Font sizes are explicit: \scriptsize is 9 pt in sn-jnl.cls, too large for this layout.
+% the class rows of panel (a) are those of the WBC use case, coloured by their owner.
+\begin{tikzpicture}[x=0.97cm,y=1cm,font=\fontsize{7.5}{9}\selectfont,
+    blk/.style={draw=black!60,rounded corners=1.5pt,align=center,inner sep=2pt},
+    shared/.style={blk,fill=black!8},
+    stage/.style={blk,fill=white,text width=2.85cm,minimum height=1.45cm,font=\fontsize{7}{8.4}\selectfont},
+    arr/.style={-{Latex[length=1.6mm]},black!70,thick},
+    num/.style={circle,fill=black!75,text=white,inner sep=0.7pt,font=\fontsize{6.5}{6.5}\selectfont\bfseries}]
+  \definecolor{nA}{RGB}{120,160,220}\definecolor{nB}{RGB}{240,170,90}
+  \definecolor{nC}{RGB}{120,190,120}\definecolor{nD}{RGB}{185,140,200}
+  % ── (a) the model: shared parameters and class rows ──────────────────────────
+  \node[anchor=west,font=\fontsize{9}{11}\selectfont\bfseries] at (-0.1,3.05) {(a) Model: shared parameters and class rows};
+  \node[blk,minimum width=0.9cm,minimum height=0.8cm] (img) at (0.45,1.3) {image};
+  \node[shared,minimum width=1.3cm,minimum height=1.6cm] (bb) at (2.0,1.3) {backbone};
+  \node[shared,minimum width=1.1cm,minimum height=1.6cm] (neck) at (3.55,1.3) {neck};
+  \node[shared,minimum width=1.9cm,minimum height=0.55cm] (box) at (5.6,2.15) {box branch};
+  \node[shared,minimum width=1.9cm,minimum height=0.55cm] (cls) at (5.6,0.45) {class branch};
+  \draw[arr] (img) -- (bb); \draw[arr] (bb) -- (neck);
+  \draw[arr] (neck.east) -- ++(0.25,0) |- (box.west); \draw[arr] (neck.east) -- ++(0.25,0) |- (cls.west);
+  \foreach \col/\lab [count=\i from 0] in {nD/basophil,nB/eosinophil,nC/erythroblast,nC/immunoglobulin,
+                                           nD/lymphocyte,nD/monocyte,nA/neutrophil} {
+    \fill[\col] (7.15,1.1-\i*0.19) rectangle (7.65,1.1-\i*0.19-0.17);
+    \node[anchor=west,font=\fontsize{6}{7}\selectfont,inner sep=1pt] at (7.68,1.1-\i*0.19-0.085) {\lab};
+  }
+  \draw[black!60] (7.15,1.1) rectangle (7.65,1.1-7*0.19+0.02);
+  \draw[arr] (cls.east) -- (7.13,0.45);
+  \node[anchor=south,font=\fontsize{6}{7}\selectfont] at (7.4,1.12) {last $1{\times}1$ convolution};
+  \node[align=left,anchor=west] at (9.6,2.15) {\textbf{shared parameters}\\(grey): merged from\\every node};
+  \node[align=left,anchor=west] at (9.6,0.5) {\textbf{class rows} $\theta^{(c)}$: one row\\per class at each scale,\\changed only by the\\class's owner (R3)};
+  \draw[black!40,densely dotted] (6.55,2.15) -- (9.55,2.15);
+  % ── (b) the federation, steps numbered in the order they happen ─────────────
+  \node[anchor=west,font=\fontsize{9}{11}\selectfont\bfseries] at (-0.1,-0.45) {(b) Federation: one server, four nodes, steps 1--7};
+  \draw[black!60,rounded corners=2pt,fill=black!3] (-0.05,-3.75) rectangle (13.1,-0.8);
+  \node[anchor=north west,align=left] at (0.0,-0.85) {\textbf{Server}: holds no data and trains nothing (R2); it only combines weights and statistics};
+  \node[stage] (s1) at (1.6,-2.5) {\textbf{4 Ownership}\\rows of class $c$ only\\from its owner\\(server's registry)};
+  \node[stage] (s2) at (4.9,-2.5) {\textbf{5 Defence}\\norm bounds per part:\\shared, BatchNorm,\\class rows};
+  \node[stage] (s3) at (8.2,-2.5) {\textbf{6 Merge}\\FedAvg, CWT or\\FedAsync (Figure~\ref{fig:schemes}):\\new global model};
+  \node[stage,dashed] (s4) at (11.5,-2.5) {\textbf{7 Calibration}, after\\the last update: pooled\\BatchNorm statistics;\\owners re-fit their rows};
+  \draw[arr] (s1) -- (s2); \draw[arr] (s2) -- (s3); \draw[arr,dashed] (s3) -- (s4);
+  % nodes
+  \foreach \n/\col/\x/\cls in {A/nA/1.6/{neutrophil},B/nB/4.9/{eosinophil},C/nC/8.2/{erythroblast,\\immunoglobulin},
+                                D/nD/11.5/{basophil,\\lymphocyte, monocyte}} {
+    \node[blk,draw=\col,very thick,fill=\col!12,text width=2.95cm,minimum height=1.9cm,anchor=north] (n\n) at (\x,-4.75)
+      {\textbf{node \n}: \cls\\[1pt]\textbf{2 Train} on its own\\images, own labels};
+  }
+  \foreach \n in {A,B,C,D} {
+    \draw[arr] ([xshift=-0.45cm]n\n.north |- 0,-3.75) -- ([xshift=-0.45cm]n\n.north) node[num,midway] {1};
+    \draw[arr] ([xshift=0.45cm]n\n.north) -- ([xshift=0.45cm]n\n.north |- 0,-3.75) node[num,midway] {3};
+  }
+  \node[anchor=north,align=center] at (6.55,-6.8) {Order: every node \textbf{1} downloads the global model, \textbf{2} trains and \textbf{3} uploads its change; the server\\runs \textbf{4}--\textbf{6}, and after each merge the nodes start again from \textbf{1}; \textbf{7} runs once, after the last update.\\Local training uses a masked loss: a class a node does not own gets no gradient there, so its\\unlabelled objects are not learned as background. A node learns about other nodes' classes only\\through the model it downloads (R1).};
+\end{tikzpicture}

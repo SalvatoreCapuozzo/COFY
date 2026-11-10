@@ -1,0 +1,54 @@
+# Kill processes
+pkill -f "runs/variants/_queue[.]sh"                                     # 1. queue manager first
+pkill -f "tools/(run_variant|calibrate_checkpoints|run_baseline)[.]py"   # 2. runner
+pkill -f "cofy[.]simulate"                                            # 3. training in progress
+sleep 5; pkill -f "envs/dafyolo/bin/python -s -c from multiprocessing"   # 4. leftover workers
+nvidia-smi                                                               # GPU back to ~9 MiB
+
+# Restart processes
+cd ~/DAFYOLO/cofy_system && conda activate dafyolo
+pgrep -fl "_queue[.]sh|tools/(run_variant|calibrate_checkpoints|run_baseline)[.]py|cofy[.]simulate"   # must print nothing
+python tools/launch_detached.py runs/variants/_queue.log -- /bin/bash runs/variants/_queue.sh
+tail -f runs/variants/_queue.log
+
+setsid nohup nvidia-smi --query-gpu=timestamp,power.draw,utilization.gpu,memory.used --format=csv,noheader,nounits -l 10 >> runs/variants/_power.csv 2>/dev/null &
+
+# See status
+cd ~/DAFYOLO/cofy_system && conda activate dafyolo
+python tools/queue_status.py --watch
+
+COFY demo: one-command federation over the network, licence, online launchers
+
+cofy_system/demo/run_demo.py: starts the real server and four client
+
+processes on one machine, creates a room for kfm12, WBC or DENTEX with the
+
+sequential or concurrent scheme, joins every node with its own small dataset,
+
+runs training and calibration, and prints turns, uploads, calibration and
+
+the server's developer-mode evaluation. Dashboards stay open with --keep-open.
+
+cofy_system/demo/data/: six training and two validation images per node
+
+and a small evaluation set for each use case, with each source's licence
+
+(demo/data/README.md); make_demo_data.py rebuilds them from the study splits.
+
+cofy_system/demo/COFY_demo.ipynb and .devcontainer/: run the demo on
+
+Google Colab or GitHub Codespaces for free.
+
+cofy/net/client_app.py: a node that finished training just before the
+
+server opened the calibration phase left without calibrating, and the
+
+barrier then waited for the heartbeat timeout; it now waits for the phase.
+
+The federation code the demo runs (cofy/ and cofy/net/), the YOLO26
+
+classic-head architecture and requirements.
+
+LICENSE: GNU AGPL-3.0, the licence of the Ultralytics library the code
+
+builds on. README: COFY (Class-Owned Federated YOLO), formerly DAFYOLO.

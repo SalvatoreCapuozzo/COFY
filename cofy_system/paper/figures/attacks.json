@@ -1,0 +1,16 @@
+{
+ "wbc": {
+  "a_img": "data/study/wbc/node_A/images/train/BNE_102779.jpg",
+  "c_img": "data/attack/wbc/node_A_backdoor/images/train/BNE_103440.jpg",
+  "eval": "LY_106354.jpg",
+  "bnpoison_attacker": "node_C"
+ },
+ "kfm12": {
+  "a_img": "01_BOV_F_10GEN23_micro_01_00.png",
+  "eval": "01_BOV_F_10GEN23_micro_03_00.png"
+ },
+ "dentex": {
+  "a_img": "dentex_train_0.jpg",
+  "eval": "dentex_train_109.jpg"
+ }
+}

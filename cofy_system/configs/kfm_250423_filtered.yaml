@@ -1,0 +1,89 @@
+global_classes:
+- strongili
+- eimeria_spp
+- fasciola
+- calicophoron
+- nematodirus
+- dicrocoelium
+- metastrongili
+- strongyloides
+- moniezia_benedeni
+- ascaris
+- ancylostoma
+- trichuris_trichiuria
+model:
+  arch: yolov8l.yaml
+  imgsz: 960
+  pretrained: false   # NEW: shared params (backbone/neck/box-head/DFL) init'd
+                      # from yolov8m.pt (COCO). Per-class head always stays
+                      # random -- nc=12 here, COCO has 80, no valid mapping.
+                      # This is the default now; set false for from-scratch.
+federation:
+  mode: async
+  local_epochs: 1
+  batch_size: 2        # was 8 -- yolov8m@960 OOM'd at batch=8 on this 8GB GPU
+                        # (measured: batch=4 peaks at 6.3GB, fits with headroom)
+  lr0: 0.0008
+  warmup_steps: 20
+  grad_clip: 10.0
+  workers: 0
+  device: cuda
+  data_fraction: 1.0
+  rounds: 5
+  async_node_cycles: 1    # overwritten at runtime by target_run.federated_max_cycles
+  staleness_alpha: 0.5
+  max_concurrent_nodes: 1
+  eval_interval: 4          # overwritten at runtime by target_run.eval_every_submissions
+  pseudo_label:
+    enabled: false    # disabled for this run -- measured ~1.9x slower per batch
+                      # with the teacher forward pass active; prioritizing core
+                      # detection quality at the new capacity/resolution first.
+    start_round: 2
+    conf_thresh: 0.6
+    weight: 0.5
+
+# Read only by cofy.simulate_to_target (ignored by cofy.simulate)
+target_run:
+  target_map: 0.80
+  target_metric: map50
+  eval_every_epochs: 1          # now applied per NODE PASS, not per epoch --
+                                # 4x more frequent than before (see
+                                # train_centralized_to_target in
+                                # simulate_to_target.py)
+  eval_every_submissions: 1     # was 4 -- evaluate after every single
+                                # submission (one node's one cycle), matching
+                                # the same per-node granularity as centralized
+  centralized_max_epochs: 15  # calibrated cap: measured ~40min per full pass
+                              # over all 4 nodes at batch=4/imgsz=960/yolov8m
+                              # (no pseudo-label) => ~10h worst case for 15 epochs
+  federated_max_cycles: 15    # ~10h worst case for 15 epochs, same calibration
+  federated_patience: 5
+  min_improvement: 0.002
+
+nodes:
+- name: node_A
+  data_yaml: data/kfm_250423_filtered/node_A/data.yaml
+  owned_classes:
+  - eimeria_spp
+  - calicophoron
+- name: node_B
+  data_yaml: data/kfm_250423_filtered/node_B/data.yaml
+  owned_classes:
+  - fasciola
+  - metastrongili
+  - moniezia_benedeni
+  - trichuris_trichiuria
+- name: node_C
+  data_yaml: data/kfm_250423_filtered/node_C/data.yaml
+  owned_classes:
+  - strongili
+  - nematodirus
+  - dicrocoelium
+  - strongyloides
+- name: node_D
+  data_yaml: data/kfm_250423_filtered/node_D/data.yaml
+  owned_classes:
+  - ascaris
+  - ancylostoma
+output_dir: runs/kfm_250423_fed_260801_full_filtered
+seed: 0

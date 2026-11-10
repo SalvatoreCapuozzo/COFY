@@ -1,0 +1,298 @@
+{
+ "wbc_cwt_s100": {
+  "config": "configs/net/wbc_cwt_s100.yaml",
+  "use_case": "wbc",
+  "seed": 100,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2sync",
+   "stage": "bn+head",
+   "result": "runs/variants/calib/confirm_v2sync/wbc/s100/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/wbc/s100/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "wbc_fedasync_s100": {
+  "config": "configs/net/wbc_fedasync_s100.yaml",
+  "use_case": "wbc",
+  "seed": 100,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2async",
+   "stage": "acal_refresh",
+   "result": "runs/variants/calib/confirm_v2async/wbc/s100/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/wbc/s100/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "wbc_cwt_s101": {
+  "config": "configs/net/wbc_cwt_s101.yaml",
+  "use_case": "wbc",
+  "seed": 101,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2sync",
+   "stage": "bn+head",
+   "result": "runs/variants/calib/confirm_v2sync/wbc/s101/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/wbc/s101/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "wbc_fedasync_s101": {
+  "config": "configs/net/wbc_fedasync_s101.yaml",
+  "use_case": "wbc",
+  "seed": 101,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2async",
+   "stage": "acal_refresh",
+   "result": "runs/variants/calib/confirm_v2async/wbc/s101/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/wbc/s101/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "wbc_cwt_s102": {
+  "config": "configs/net/wbc_cwt_s102.yaml",
+  "use_case": "wbc",
+  "seed": 102,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2sync",
+   "stage": "bn+head",
+   "result": "runs/variants/calib/confirm_v2sync/wbc/s102/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/wbc/s102/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "wbc_fedasync_s102": {
+  "config": "configs/net/wbc_fedasync_s102.yaml",
+  "use_case": "wbc",
+  "seed": 102,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2async",
+   "stage": "acal_refresh",
+   "result": "runs/variants/calib/confirm_v2async/wbc/s102/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/wbc/s102/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "dentex_cwt_s100": {
+  "config": "configs/net/dentex_cwt_s100.yaml",
+  "use_case": "dentex",
+  "seed": 100,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2sync",
+   "stage": "bn+head",
+   "result": "runs/variants/calib/confirm_v2sync/dentex/s100/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/dentex/s100/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "dentex_fedasync_s100": {
+  "config": "configs/net/dentex_fedasync_s100.yaml",
+  "use_case": "dentex",
+  "seed": 100,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2async",
+   "stage": "acal_refresh",
+   "result": "runs/variants/calib/confirm_v2async/dentex/s100/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/dentex/s100/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "dentex_cwt_s101": {
+  "config": "configs/net/dentex_cwt_s101.yaml",
+  "use_case": "dentex",
+  "seed": 101,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2sync",
+   "stage": "bn+head",
+   "result": "runs/variants/calib/confirm_v2sync/dentex/s101/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/dentex/s101/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "dentex_fedasync_s101": {
+  "config": "configs/net/dentex_fedasync_s101.yaml",
+  "use_case": "dentex",
+  "seed": 101,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2async",
+   "stage": "acal_refresh",
+   "result": "runs/variants/calib/confirm_v2async/dentex/s101/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/dentex/s101/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "dentex_cwt_s102": {
+  "config": "configs/net/dentex_cwt_s102.yaml",
+  "use_case": "dentex",
+  "seed": 102,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2sync",
+   "stage": "bn+head",
+   "result": "runs/variants/calib/confirm_v2sync/dentex/s102/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/dentex/s102/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "dentex_fedasync_s102": {
+  "config": "configs/net/dentex_fedasync_s102.yaml",
+  "use_case": "dentex",
+  "seed": 102,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2async",
+   "stage": "acal_refresh",
+   "result": "runs/variants/calib/confirm_v2async/dentex/s102/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/dentex/s102/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "kfm12_cwt_s100": {
+  "config": "configs/net/kfm12_cwt_s100.yaml",
+  "use_case": "kfm12",
+  "seed": 100,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2sync",
+   "stage": "bn+head",
+   "result": "runs/variants/calib/confirm_v2sync/kfm12/s100/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/kfm12/s100/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "kfm12_fedasync_s100": {
+  "config": "configs/net/kfm12_fedasync_s100.yaml",
+  "use_case": "kfm12",
+  "seed": 100,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2async",
+   "stage": "acal_refresh",
+   "result": "runs/variants/calib/confirm_v2async/kfm12/s100/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/kfm12/s100/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "kfm12_cwt_s101": {
+  "config": "configs/net/kfm12_cwt_s101.yaml",
+  "use_case": "kfm12",
+  "seed": 101,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2sync",
+   "stage": "bn+head",
+   "result": "runs/variants/calib/confirm_v2sync/kfm12/s101/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/kfm12/s101/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "kfm12_fedasync_s101": {
+  "config": "configs/net/kfm12_fedasync_s101.yaml",
+  "use_case": "kfm12",
+  "seed": 101,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2async",
+   "stage": "acal_refresh",
+   "result": "runs/variants/calib/confirm_v2async/kfm12/s101/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/kfm12/s101/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "kfm12_cwt_s102": {
+  "config": "configs/net/kfm12_cwt_s102.yaml",
+  "use_case": "kfm12",
+  "seed": 102,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2sync",
+   "stage": "bn+head",
+   "result": "runs/variants/calib/confirm_v2sync/kfm12/s102/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/kfm12/s102/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "kfm12_fedasync_s102": {
+  "config": "configs/net/kfm12_fedasync_s102.yaml",
+  "use_case": "kfm12",
+  "seed": 102,
+  "scale": "l",
+  "simulated": {
+   "variant": "confirm_v2async",
+   "stage": "acal_refresh",
+   "result": "runs/variants/calib/confirm_v2async/kfm12/s102/async.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/kfm12/s102/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "wbc_fedavg_s0": {
+  "config": "configs/net/wbc_fedavg_s0.yaml",
+  "use_case": "wbc",
+  "seed": 0,
+  "scale": "l",
+  "simulated": {
+   "variant": "v2_sync",
+   "stage": "bn+head",
+   "result": "runs/variants/calib/v2_sync/wbc/s0/sync.json"
+  },
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/wbc/s0/centralized.json",
+   "stage": "bn+head"
+  }
+ },
+ "smoke_wbc_cwt": {
+  "config": "configs/net/smoke_wbc_cwt.yaml",
+  "use_case": "wbc",
+  "seed": 100,
+  "scale": "l",
+  "simulated": null,
+  "centralized": {
+   "result": "runs/variants/calib/v2_centralized/wbc/s100/centralized.json",
+   "stage": "bn+head"
+  }
+ }
+}

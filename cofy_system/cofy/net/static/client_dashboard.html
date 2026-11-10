@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cofy — personal room</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1d212a; --border: #2a2f3a; --ink: #e6e9ef;
+    --muted: #8b93a3; --accent: #b05bff; --good: #35c98f; --warn: #e8b339;
+    --bad: #e8555a; --mono: 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 -apple-system, 'Segoe UI', sans-serif; }
+  header { padding: 14px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  header .sub { color: var(--muted); font-size: 12.5px; font-family: var(--mono); }
+  header button.stop { margin-left: auto; background: var(--bad); border: none; color: white;
+    border-radius: 6px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  main { max-width: 760px; margin: 0 auto; padding: 20px 24px 60px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 18px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--muted); margin: 0 0 14px; font-weight: 600; }
+  label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+  input, select { width: 100%; background: #0d0f14; border: 1px solid var(--border); color: var(--ink);
+    border-radius: 6px; padding: 8px 10px; font-size: 13.5px; font-family: var(--mono); }
+  .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 160px; }
+  button { background: var(--accent); color: white; border: none; border-radius: 6px;
+    padding: 9px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-right: 8px; margin-bottom: 6px; }
+  button:hover { filter: brightness(1.1); }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--ink); }
+  button.danger { background: var(--bad); }
+  button:disabled { opacity: .5; cursor: default; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tab { padding: 6px 12px; border-radius: 6px; font-size: 12.5px; cursor: pointer; color: var(--muted); }
+  .tab.active { background: var(--panel2); color: var(--ink); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+  .badge.idle, .badge.joined { background: #2a2f3a; color: var(--ink); }
+  .badge.training, .badge.uploading, .badge.waiting { background: #3a2a52; color: var(--accent); }
+  .badge.done { background: #163d30; color: var(--good); }
+  .badge.error { background: #3d1a1a; color: var(--bad); }
+  .badge.reconnecting { background: #3d331a; color: #fbbf24; }
+  .kv { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-size: 13px; }
+  .kv .k { color: var(--muted); }
+  .kv .v { font-family: var(--mono); }
+  #log { height: 220px; overflow-y: auto; background: #0d0f14; border-radius: 6px;
+    padding: 10px 12px; font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: pre-wrap; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .error-box { background: #2a1414; border: 1px solid var(--bad); color: #ff9a9d;
+    border-radius: 6px; padding: 10px 12px; font-size: 13px; margin-top: 10px; }
+  .browser { background: #0d0f14; border: 1px solid var(--border); border-radius: 6px;
+    max-height: 220px; overflow-y: auto; margin-top: 8px; }
+  .browser .entry { padding: 6px 12px; font-family: var(--mono); font-size: 12.5px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; }
+  .browser .entry:hover { background: var(--panel2); }
+  .browser .entry.file { color: var(--muted); }
+  .browser .crumb { padding: 6px 12px; font-family: var(--mono); font-size: 12px; color: var(--muted);
+    border-bottom: 1px solid var(--border); word-break: break-all; }
+  .tree { background: #0d0f14; border-radius: 6px; padding: 12px 16px; font-family: var(--mono);
+    font-size: 12.5px; color: var(--muted); line-height: 1.7; white-space: pre; }
+  .tree .dir { color: var(--accent); }
+  .node-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+  .node-table th { text-align: left; color: var(--muted); font-size: 10.5px; text-transform: uppercase;
+    padding: 5px 8px; border-bottom: 1px solid var(--border); }
+  .node-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); font-family: var(--mono); }
+</style>
+</head>
+<body>
+<header>
+  <h1>cofy &middot; personal room</h1>
+  <span class="sub" id="host-hint"></span>
+  <button class="stop" onclick="stopClient()">Stop client</button>
+</header>
+<main>
+
+  <div class="card" id="join-card">
+    <h2>Join a room</h2>
+    <div class="row">
+      <div>
+        <label>Server URL</label>
+        <input id="server-url" placeholder="http://192.168.1.23:8900" value="http://127.0.0.1:8900">
+      </div>
+      <div>
+        <label>Room ID</label>
+        <input id="room-id" placeholder="demo" value="demo">
+      </div>
+      <div>
+        <label>Room password</label>
+        <input id="room-password" placeholder="ask the server operator">
+      </div>
+      <div>
+        <label>Reclaim node (optional)</label>
+        <input id="reclaim-node" placeholder="e.g. node_A -- only after restarting this client">
+      </div>
+    </div>
+    <button onclick="fetchRoom()">Fetch room</button>
+    <div id="room-info" class="hint"></div>
+
+    <div id="classes-field" style="display:none;margin-top:14px">
+      <label>Your classes (this dynamic room has no predefined classes — declare your own, comma-separated, in the SAME order your local labels use)</label>
+      <input id="class-names" placeholder="strongili, fasciola, calicophoron">
+    </div>
+
+    <div style="margin-top:16px">
+      <label>Local dataset</label>
+      <div class="tabs">
+        <div class="tab active" data-tab="browse" onclick="switchDatasetTab('browse')">Browse for an existing data.yaml</div>
+        <div class="tab" data-tab="build" onclick="switchDatasetTab('build')">Build one from a folder</div>
+      </div>
+
+      <div id="tab-browse">
+        <input id="browse-path" placeholder="type a path or use the browser below" oninit="">
+        <div class="browser" id="browser-list"></div>
+      </div>
+
+      <div id="tab-build" style="display:none">
+        <p class="hint" style="margin-top:0">Point at a folder already laid out like this (same convention every dataset in this project uses, and what ultralytics itself expects):</p>
+        <div class="tree">📁 your_data_folder/
+  📁 <span class="dir">images/</span>
+    📁 train/   <span style="opacity:.6"># training images (.jpg/.png)</span>
+    📁 val/     <span style="opacity:.6"># validation images</span>
+  📁 <span class="dir">labels/</span>
+    📁 train/   <span style="opacity:.6"># one .txt per training image, same filename</span>
+    📁 val/     <span style="opacity:.6"># one .txt per validation image</span>
+        <span style="opacity:.6">   each label line: "&lt;class_index&gt; &lt;x_center&gt; &lt;y_center&gt; &lt;width&gt; &lt;height&gt;"
+   (normalized 0-1) -- class_index must match the order of the
+   class list you type below, 0-indexed.</span></div>
+        <div class="row" style="margin-top:10px">
+          <div style="flex:2"><label>Folder path</label><input id="build-folder-path"></div>
+        </div>
+        <div class="browser" id="build-browser-list"></div>
+        <label style="margin-top:10px">Class names (comma-separated, matching your label indices in order)</label>
+        <input id="build-class-names" placeholder="strongili, fasciola, calicophoron">
+        <div style="margin-top:10px"><button class="secondary" onclick="buildDataset()">Build data.yaml here</button></div>
+        <div id="build-result" class="hint"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px"><button onclick="join()">Join &amp; prepare</button></div>
+    <div id="join-error" class="error-box" style="display:none"></div>
+  </div>
+
+  <div class="card" id="status-card" style="display:none">
+    <h2>This node</h2>
+    <div class="kv">
+      <div class="k">Room</div><div class="v" id="s-room">—</div>
+      <div class="k">Node</div><div class="v" id="s-node">—</div>
+      <div class="k">Owns classes</div><div class="v" id="s-owns">—</div>
+      <div class="k">Mode</div><div class="v" id="s-mode">—</div>
+      <div class="k">Progress</div><div class="v" id="s-progress">—</div>
+      <div class="k">Phase</div><div class="v"><span class="badge" id="s-phase">idle</span></div>
+      <div class="k">Detail</div><div class="v" id="s-detail">—</div>
+    </div>
+    <div style="margin-top:14px">
+      <button id="start-btn" onclick="startTraining()">Start training</button>
+      <button class="danger secondary" id="stop-btn" onclick="stopTraining()" disabled>Stop</button>
+    </div>
+    <div id="add-classes-row" style="display:none;margin-top:14px">
+      <label>Declare more classes (async, dynamic rooms only — starts contributing to them from your next cycle)</label>
+      <div style="display:flex;gap:8px">
+        <input id="more-classes" placeholder="new_class_1, new_class_2">
+        <button class="secondary" onclick="addClasses()" style="margin:0">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="room-card" style="display:none">
+    <h2>Room state</h2>
+    <div class="kv">
+      <div class="k">Nodes</div><div class="v" id="r-node-count">—</div>
+      <div class="k">All reported in</div><div class="v" id="r-all-in">—</div>
+    </div>
+    <table class="node-table">
+      <thead><tr><th>Node</th><th>Classes</th><th>Round/Cycle</th><th>Status</th></tr></thead>
+      <tbody id="r-nodes-body"></tbody>
+    </table>
+  </div>
+
+  <div class="card" id="log-card" style="display:none">
+    <h2>Log</h2>
+    <div id="log"></div>
+  </div>
+
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+$("host-hint").textContent = location.host;
+let roomInfo = null;
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) { const t = await r.text(); throw new Error(t); }
+  return r.json();
+}
+
+function switchDatasetTab(tab) {
+  document.querySelectorAll("#join-card .tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+  $("tab-browse").style.display = tab === "browse" ? "block" : "none";
+  $("tab-build").style.display = tab === "build" ? "block" : "none";
+}
+
+async function browseTo(target, path) {
+  const data = await api("/api/browse" + (path ? `?path=${encodeURIComponent(path)}` : ""));
+  const listId = target === "browse" ? "browser-list" : "build-browser-list";
+  const pathId = target === "browse" ? "browse-path" : "build-folder-path";
+  let html = `<div class="crumb">${data.cwd}</div>`;
+  if (data.parent) html += `<div class="entry" onclick="browseTo('${target}','${data.parent.replace(/'/g, "\\'")}')">.. (up)</div>`;
+  html += data.entries.map(e =>
+    `<div class="entry ${e.is_dir ? '' : 'file'}" onclick="${e.is_dir ? `browseTo('${target}','${(data.cwd + '/' + e.name).replace(/'/g, "\\'")}')` : `selectPath('${target}','${(data.cwd + '/' + e.name).replace(/'/g, "\\'")}')`}">${e.is_dir ? '📁' : '📄'} ${e.name}</div>`
+  ).join("");
+  document.getElementById(listId).innerHTML = html;
+  document.getElementById(pathId).value = data.cwd;
+}
+
+function selectPath(target, path) {
+  const pathId = target === "browse" ? "browse-path" : "build-folder-path";
+  document.getElementById(pathId).value = path;
+}
+
+async function buildDataset() {
+  $("build-result").textContent = "";
+  try {
+    const class_names = $("build-class-names").value.split(",").map(s => s.trim()).filter(Boolean);
+    const data = await api("/api/build_dataset", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({class_names, data_folder: $("build-folder-path").value.trim()})});
+    $("build-result").textContent = "Built: " + data.data_yaml;
+    $("browse-path").value = data.data_yaml;
+    switchDatasetTab("browse");
+  } catch (e) { $("build-result").textContent = "Error: " + e.message; }
+}
+
+async function fetchRoom() {
+  $("join-error").style.display = "none";
+  try {
+    const server_url = $("server-url").value.trim();
+    const room_id = $("room-id").value.trim();
+    const password = $("room-password").value;
+    const data = await api("/api/fetch_room", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({server_url, room_id, password})});
+    roomInfo = data.room;
+    const claimed = roomInfo.claimed_classes && roomInfo.claimed_classes.length ? roomInfo.claimed_classes.join(", ") : "none yet";
+    $("room-info").textContent = `${roomInfo.mode}${roomInfo.dynamic ? ' · dynamic' : ' · static'} · ${Object.keys(roomInfo.nodes).length} node(s) so far · claimed classes: ${claimed}`;
+    $("classes-field").style.display = roomInfo.dynamic ? "block" : "none";
+  } catch (e) {
+    $("join-error").textContent = e.message;
+    $("join-error").style.display = "block";
+  }
+}
+
+async function join() {
+  $("join-error").style.display = "none";
+  try {
+    const server_url = $("server-url").value.trim();
+    const room_id = $("room-id").value.trim();
+    const password = $("room-password").value;
+    const data_yaml = $("browse-path").value.trim();
+    const class_names = roomInfo && roomInfo.dynamic
+      ? $("class-names").value.split(",").map(s => s.trim()).filter(Boolean)
+      : null;
+    const snap = await api("/api/join", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({server_url, room_id, password, data_yaml, class_names,
+                            node_name: $("reclaim-node").value.trim() || null})});
+    $("status-card").style.display = "block";
+    $("room-card").style.display = "block";
+    $("log-card").style.display = "block";
+    $("add-classes-row").style.display = (roomInfo.dynamic && roomInfo.mode === "async") ? "block" : "none";
+    render(snap);
+    pollRoomState();
+  } catch (e) {
+    $("join-error").textContent = e.message;
+    $("join-error").style.display = "block";
+  }
+}
+
+async function addClasses() {
+  const class_names = $("more-classes").value.split(",").map(s => s.trim()).filter(Boolean);
+  try {
+    await api("/api/add_classes", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({class_names})});
+    $("more-classes").value = "";
+  } catch (e) { alert("Could not add classes: " + e.message); }
+}
+
+async function startTraining() { await api("/api/start", {method: "POST"}); }
+async function stopTraining() { await api("/api/stop", {method: "POST"}); }
+
+async function stopClient() {
+  if (!confirm("Stop this client process?")) return;
+  await fetch("/api/shutdown", {method: "POST"}).catch(() => {});
+  document.body.innerHTML = "<div style='padding:40px;font-family:monospace'>Client stopped.</div>";
+}
+
+function render(s) {
+  $("s-room").textContent = s.room_id ?? "—";
+  $("s-node").textContent = s.node_name ?? "—";
+  $("s-owns").textContent = (s.owned_classes || []).join(", ") || "—";
+  $("s-mode").textContent = s.mode ?? "—";
+  $("s-progress").textContent = `${s.cycle} / ${s.total ?? "?"}`;
+  const phase = $("s-phase");
+  phase.textContent = s.phase;
+  phase.className = "badge " + s.phase;
+  $("s-detail").textContent = s.detail || "—";
+  $("start-btn").disabled = s.running || s.phase === "done";
+  $("stop-btn").disabled = !s.running;
+  if (s.error) {
+    $("join-error").textContent = s.error;
+    $("join-error").style.display = "block";
+  }
+  $("log").textContent = (s.log_lines || []).join("\n");
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
+async function pollRoomState() {
+  const s = await api("/api/status").catch(() => null);
+  if (!s || !s.room_id) return;
+  try {
+    const room = await api(`/api/fetch_room`, {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({server_url: s.server_url, room_id: s.room_id})});
+    const snap = room.room;
+    $("r-node-count").textContent = Object.keys(snap.nodes).length;
+    const allIn = Object.values(snap.nodes).every(n => n.status === "done" || n.status === "waiting" || n.status === "downloading" || n.status === "training" || n.status === "uploading");
+    $("r-all-in").textContent = snap.finished ? "room finished" : (allIn ? "all active" : "some idle/unclaimed");
+    $("r-nodes-body").innerHTML = Object.values(snap.nodes).map(n => `
+      <tr><td>${n.name}${n.name === s.node_name ? " (you)" : ""}</td>
+      <td>${(n.owned_classes || []).join(", ") || "—"}</td>
+      <td>${n.round_or_cycle}</td><td>${n.status}</td></tr>`).join("");
+  } catch (e) { /* server may be mid-restart, ignore */ }
+}
+
+setInterval(async () => {
+  try {
+    const s = await api("/api/status");
+    if (s.node_name) { $("status-card").style.display = "block"; $("log-card").style.display = "block"; render(s); pollRoomState(); }
+  } catch (e) { /* server not up yet */ }
+}, 1500);
+
+browseTo("browse", null);
+</script>
+</body>
+</html>

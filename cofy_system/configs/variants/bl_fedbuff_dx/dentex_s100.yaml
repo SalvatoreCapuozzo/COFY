@@ -1,0 +1,122 @@
+# bl_fedbuff_dx: DENTEX column of the comparison with standard methods (paper Table 6), exploratory,
+# 2026-11-10. Built from confirm_v2async/dentex_s100.yaml with the federation settings that distinguish
+# bl_fedbuff from the COFY schemes on KFM12 and WBC.
+global_classes:
+- tooth_11
+- tooth_12
+- tooth_13
+- tooth_14
+- tooth_15
+- tooth_16
+- tooth_17
+- tooth_18
+- tooth_21
+- tooth_22
+- tooth_23
+- tooth_24
+- tooth_25
+- tooth_26
+- tooth_27
+- tooth_28
+- tooth_31
+- tooth_32
+- tooth_33
+- tooth_34
+- tooth_35
+- tooth_36
+- tooth_37
+- tooth_38
+- tooth_41
+- tooth_42
+- tooth_43
+- tooth_44
+- tooth_45
+- tooth_46
+- tooth_47
+- tooth_48
+model:
+  arch: configs/arch/yolo26_classic_l.yaml
+  imgsz: 640
+  pretrained: true
+federation:
+  local_epochs: 2
+  batch_size: 4
+  lr0: 0.0008
+  warmup_steps: 20
+  grad_clip: 10.0
+  workers: 0
+  device: auto
+  balanced_fraction: 1.0
+  rounds: 10
+  async_node_cycles: 10
+  staleness_alpha: 0.5
+  max_concurrent_nodes: 1
+  pseudo_label:
+    enabled: false
+    start_round: 5
+    conf_thresh: 0.6
+    weight: 0.5
+  merge_rule: mean
+  normalize_steps: false
+  eval_interval: 1000
+  keep_checkpoints: 1
+  lr_schedule: linear
+  lrf: 0.01
+  async_order: fixed
+  swa_last: 0
+  swa_per_node: true
+  async_clock: virtual
+  async_stop: cycles
+  virtual_jitter: 0.2
+  virtual_hw_spread: 0.3
+  progressive_refresh: true
+  async_rule: ca2fl
+  ca2fl_cache: false
+nodes:
+- name: node_A
+  data_yaml: data/study/dentex/node_A/data.yaml
+  owned_classes:
+  - tooth_14
+  - tooth_26
+  - tooth_27
+  - tooth_28
+  - tooth_31
+  - tooth_32
+  - tooth_44
+  - tooth_45
+- name: node_B
+  data_yaml: data/study/dentex/node_B/data.yaml
+  owned_classes:
+  - tooth_13
+  - tooth_15
+  - tooth_17
+  - tooth_33
+  - tooth_34
+  - tooth_38
+  - tooth_42
+  - tooth_46
+- name: node_C
+  data_yaml: data/study/dentex/node_C/data.yaml
+  owned_classes:
+  - tooth_16
+  - tooth_22
+  - tooth_23
+  - tooth_36
+  - tooth_37
+  - tooth_41
+  - tooth_43
+  - tooth_48
+- name: node_D
+  data_yaml: data/study/dentex/node_D/data.yaml
+  owned_classes:
+  - tooth_11
+  - tooth_12
+  - tooth_18
+  - tooth_21
+  - tooth_24
+  - tooth_25
+  - tooth_35
+  - tooth_47
+eval_data_yaml: data/study/dentex/_eval/data.yaml
+output_dir: runs/variants/bl_fedbuff_dx/dentex
+seed: 100

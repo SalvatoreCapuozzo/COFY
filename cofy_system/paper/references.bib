@@ -1,0 +1,786 @@
+% References. Every entry was checked on 2026-11-07 against its registry record: Crossref for the
+% publisher DOI, arXiv for preprints and for conference papers whose venue assigns no DOI (PMLR,
+% ICLR, NeurIPS up to 2021, MLSys, UAI, USENIX); for those, doi is the DOI of the same paper's
+% arXiv record (10.48550/arXiv.<id>).
+
+% ---------------------------------------------------------------- federated learning
+@inproceedings{mcmahan2017fedavg,
+  author    = {McMahan, H. Brendan and Moore, Eider and Ramage, Daniel and Hampson, Seth and Ag{\"u}era y Arcas, Blaise},
+  title     = {Communication-Efficient Learning of Deep Networks from Decentralized Data},
+  booktitle = {Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {54},
+  pages     = {1273--1282},
+  year      = {2017},
+  doi       = {10.48550/arXiv.1602.05629}
+}
+
+@article{kairouz2021advances,
+  author  = {Kairouz, Peter and McMahan, H. Brendan and others},
+  title   = {Advances and Open Problems in Federated Learning},
+  journal = {Foundations and Trends in Machine Learning},
+  volume  = {14},
+  number  = {1--2},
+  pages   = {1--210},
+  year    = {2021},
+  doi     = {10.1561/2200000083}
+}
+
+@inproceedings{li2020fedprox,
+  author    = {Li, Tian and Sahu, Anit Kumar and Zaheer, Manzil and Sanjabi, Maziar and Talwalkar, Ameet and Smith, Virginia},
+  title     = {Federated Optimization in Heterogeneous Networks},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
+  volume    = {2},
+  pages     = {429--450},
+  year      = {2020},
+  doi       = {10.48550/arXiv.1812.06127}
+}
+
+@inproceedings{karimireddy2020scaffold,
+  author    = {Karimireddy, Sai Praneeth and Kale, Satyen and Mohri, Mehryar and Reddi, Sashank J. and Stich, Sebastian U. and Suresh, Ananda Theertha},
+  title     = {{SCAFFOLD}: Stochastic Controlled Averaging for Federated Learning},
+  booktitle = {Proceedings of the 37th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {119},
+  pages     = {5132--5143},
+  year      = {2020},
+  doi       = {10.48550/arXiv.1910.06378}
+}
+
+@inproceedings{wang2020fednova,
+  author    = {Wang, Jianyu and Liu, Qinghua and Liang, Hao and Joshi, Gauri and Poor, H. Vincent},
+  title     = {Tackling the Objective Inconsistency Problem in Heterogeneous Federated Optimization},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {33},
+  year      = {2020},
+  doi       = {10.48550/arXiv.2007.07481}
+}
+
+@inproceedings{li2021fedbn,
+  author    = {Li, Xiaoxiao and Jiang, Meirui and Zhang, Xiaofei and Kamp, Michael and Dou, Qi},
+  title     = {{FedBN}: Federated Learning on Non-{IID} Features via Local Batch Normalization},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021},
+  doi       = {10.48550/arXiv.2102.07623}
+}
+
+@inproceedings{luo2021ccvr,
+  author    = {Luo, Mi and Chen, Fei and Hu, Dapeng and Zhang, Yifan and Liang, Jian and Feng, Jiashi},
+  title     = {No Fear of Heterogeneity: Classifier Calibration for Federated Learning with Non-{IID} Data},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {34},
+  year      = {2021},
+  doi       = {10.48550/arXiv.2106.05001}
+}
+
+@inproceedings{yu2020fedaws,
+  author    = {Yu, Felix X. and Rawat, Ankit Singh and Menon, Aditya Krishna and Kumar, Sanjiv},
+  title     = {Federated Learning with Only Positive Labels},
+  booktitle = {Proceedings of the 37th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {119},
+  year      = {2020},
+  doi       = {10.48550/arXiv.2004.10342}
+}
+
+@inproceedings{li2021fedrs,
+  author    = {Li, Xin-Chun and Zhan, De-Chuan},
+  title     = {{FedRS}: Federated Learning with Restricted Softmax for Label Distribution Non-{IID} Data},
+  booktitle = {Proceedings of the 27th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD)},
+  pages     = {995--1005},
+  year      = {2021},
+  doi       = {10.1145/3447548.3467254}
+}
+
+@inproceedings{fan2023fedgela,
+  author    = {Fan, Ziqing and Zhang, Ruipeng and Yao, Jiangchao and Han, Bo and Zhang, Ya and Wang, Yanfeng},
+  title     = {Federated Learning with Bilateral Curation for Partially Class-Disjoint Data},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {36},
+  pages     = {32006--32019},
+  year      = {2023},
+  doi       = {10.52202/075280-1389}
+}
+
+@article{xu2023fedmenu,
+  author  = {Xu, Xuanang and Deng, Hannah H. and Gateno, Jaime and Yan, Pingkun},
+  title   = {Federated Multi-Organ Segmentation With Inconsistent Labels},
+  journal = {IEEE Transactions on Medical Imaging},
+  volume  = {42},
+  number  = {10},
+  pages   = {2948--2960},
+  year    = {2023},
+  doi     = {10.1109/TMI.2023.3270140}
+}
+
+@inproceedings{wang2024condistfl,
+  author    = {Wang, Pochuan and Shen, Chen and Wang, Weichung and Oda, Masahiro and Fuh, Chiou-Shann and Mori, Kensaku and Roth, Holger R.},
+  title     = {{ConDistFL}: Conditional Distillation for Federated Learning from Partially Annotated Data},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention -- MICCAI 2023 Workshops},
+  series    = {Lecture Notes in Computer Science},
+  pages     = {311--321},
+  publisher = {Springer},
+  year      = {2023},
+  doi       = {10.1007/978-3-031-47401-9_30}
+}
+
+@inproceedings{deng2023fedlsm,
+  author    = {Deng, Zhipeng and Luo, Luyang and Chen, Hao},
+  title     = {Scale Federated Learning for Label Set Mismatch in Medical Image Classification},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention -- MICCAI 2023},
+  series    = {Lecture Notes in Computer Science},
+  pages     = {118--127},
+  publisher = {Springer},
+  year      = {2023},
+  doi       = {10.1007/978-3-031-43898-1_12}
+}
+
+@inproceedings{wagner2025feasibility,
+  author    = {Wagner, Felix and Xu, Wentian and Saha, Pramit and Liang, Ziyun and Whitehouse, Daniel and Menon, David and Newcombe, Virginia and Voets, Natalie and Noble, J. Alison and Kamnitsas, Konstantinos},
+  title     = {Feasibility of Federated Learning from Client Databases with Different Brain Diseases and {MRI} Modalities},
+  booktitle = {Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)},
+  pages     = {357--367},
+  year      = {2025},
+  doi       = {10.1109/WACV61041.2025.00045}
+}
+
+@article{xie2019fedasync,
+  author  = {Xie, Cong and Koyejo, Sanmi and Gupta, Indranil},
+  title   = {Asynchronous Federated Optimization},
+  journal = {arXiv preprint arXiv:1903.03934},
+  year    = {2019},
+  doi     = {10.48550/arXiv.1903.03934}
+}
+
+@inproceedings{nguyen2022fedbuff,
+  author    = {Nguyen, John and Malik, Kshitiz and Zhan, Hongyuan and Yousefpour, Ashkan and Rabbat, Michael and Malek, Mani and Huba, Dzmitry},
+  title     = {Federated Learning with Buffered Asynchronous Aggregation},
+  booktitle = {Proceedings of the 25th International Conference on Artificial Intelligence and Statistics (AISTATS)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {151},
+  pages     = {3581--3607},
+  year      = {2022},
+  doi       = {10.48550/arXiv.2106.06639}
+}
+
+@inproceedings{wang2024ca2fl,
+  author    = {Wang, Yujia and Cao, Yuanpu and Wu, Jingcheng and Chen, Ruoyu and Chen, Jinghui},
+  title     = {Tackling the Data Heterogeneity in Asynchronous Federated Learning with Cached Update Calibration},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  url       = {https://iclr.cc/virtual/2024/poster/19456},
+  note      = {No DOI or arXiv record}
+}
+
+@inproceedings{izmailov2018swa,
+  author    = {Izmailov, Pavel and Podoprikhin, Dmitrii and Garipov, Timur and Vetrov, Dmitry and Wilson, Andrew Gordon},
+  title     = {Averaging Weights Leads to Wider Optima and Better Generalization},
+  booktitle = {Proceedings of the 34th Conference on Uncertainty in Artificial Intelligence (UAI)},
+  year      = {2018},
+  doi       = {10.48550/arXiv.1803.05407}
+}
+
+@inproceedings{ioffe2015bn,
+  author    = {Ioffe, Sergey and Szegedy, Christian},
+  title     = {Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift},
+  booktitle = {Proceedings of the 32nd International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {37},
+  pages     = {448--456},
+  year      = {2015},
+  doi       = {10.48550/arXiv.1502.03167}
+}
+
+% ---------------------------------------------------------------- medical federated learning
+@article{rieke2020future,
+  author  = {Rieke, Nicola and Hancox, Jonny and Li, Wenqi and Milletar{\`\i}, Fausto and Roth, Holger R. and Albarqouni, Shadi and Bakas, Spyridon and Galtier, Mathieu N. and Landman, Bennett A. and Maier-Hein, Klaus and Ourselin, S{\'e}bastien and Sheller, Micah and Summers, Ronald M. and Trask, Andrew and Xu, Daguang and Baust, Maximilian and Cardoso, M. Jorge},
+  title   = {The Future of Digital Health with Federated Learning},
+  journal = {npj Digital Medicine},
+  volume  = {3},
+  pages   = {119},
+  year    = {2020},
+  doi     = {10.1038/s41746-020-00323-1}
+}
+
+@article{sheller2020federated,
+  author  = {Sheller, Micah J. and Edwards, Brandon and Reina, G. Anthony and others},
+  title   = {Federated Learning in Medicine: Facilitating Multi-Institutional Collaborations without Sharing Patient Data},
+  journal = {Scientific Reports},
+  volume  = {10},
+  pages   = {12598},
+  year    = {2020},
+  doi     = {10.1038/s41598-020-69250-1}
+}
+
+@article{dayan2021federated,
+  author  = {Dayan, Ittai and Roth, Holger R. and Zhong, Aoxiao and others},
+  title   = {Federated Learning for Predicting Clinical Outcomes in Patients with {COVID-19}},
+  journal = {Nature Medicine},
+  volume  = {27},
+  number  = {10},
+  pages   = {1735--1743},
+  year    = {2021},
+  doi     = {10.1038/s41591-021-01506-3}
+}
+
+@article{kaissis2020secure,
+  author  = {Kaissis, Georgios A. and Makowski, Marcus R. and R{\"u}ckert, Daniel and Braren, Rickmer F.},
+  title   = {Secure, Privacy-Preserving and Federated Machine Learning in Medical Imaging},
+  journal = {Nature Machine Intelligence},
+  volume  = {2},
+  number  = {6},
+  pages   = {305--311},
+  year    = {2020},
+  doi     = {10.1038/s42256-020-0186-1}
+}
+
+% ---------------------------------------------------------------- object detection
+@inproceedings{redmon2016yolo,
+  author    = {Redmon, Joseph and Divvala, Santosh and Girshick, Ross and Farhadi, Ali},
+  title     = {You Only Look Once: Unified, Real-Time Object Detection},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {779--788},
+  year      = {2016},
+  doi       = {10.1109/CVPR.2016.91}
+}
+
+@misc{ultralytics,
+  author       = {Jocher, Glenn and Qiu, Jing and Chaurasia, Ayush},
+  title        = {Ultralytics {YOLO}},
+  howpublished = {\url{https://github.com/ultralytics/ultralytics}},
+  note         = {Software, version 8.4.84 used in this work; no DOI},
+  year         = {2025}
+}
+
+@misc{jocher2026yolo26,
+  author       = {Jocher, Glenn and Qiu, Jing and Liu, Mengyu and Lyu, Shuai and Akyon, Fatih Cagatay and Kalfaoglu, Muhammet Esat},
+  title        = {Ultralytics {YOLO26}: Unified Real-Time End-to-End Vision Models},
+  howpublished = {arXiv preprint arXiv:2606.03748},
+  year         = {2026},
+  doi          = {10.48550/arXiv.2606.03748}
+}
+
+@inproceedings{lin2014coco,
+  author    = {Lin, Tsung-Yi and Maire, Michael and Belongie, Serge and Hays, James and Perona, Pietro and Ramanan, Deva and Doll{\'a}r, Piotr and Zitnick, C. Lawrence},
+  title     = {Microsoft {COCO}: Common Objects in Context},
+  booktitle = {Computer Vision -- ECCV 2014},
+  series    = {Lecture Notes in Computer Science},
+  pages     = {740--755},
+  publisher = {Springer},
+  year      = {2014},
+  doi       = {10.1007/978-3-319-10602-1_48}
+}
+
+@inproceedings{liu2020fedvision,
+  author    = {Liu, Yang and Huang, Anbu and Luo, Yun and Huang, He and Liu, Youzhi and Chen, Yuanyuan and Feng, Lican and Chen, Tianjian and Yu, Han and Yang, Qiang},
+  title     = {{FedVision}: An Online Visual Object Detection Platform Powered by Federated Learning},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume    = {34},
+  number    = {08},
+  pages     = {13172--13179},
+  year      = {2020},
+  doi       = {10.1609/aaai.v34i08.7021}
+}
+
+@article{luo2019realworld,
+  author  = {Luo, Jiahuan and Wu, Xueyang and Luo, Yun and Huang, Anbu and Huang, Yunfeng and Liu, Yang and Yang, Qiang},
+  title   = {Real-World Image Datasets for Federated Learning},
+  journal = {arXiv preprint arXiv:1910.11089},
+  year    = {2019},
+  doi     = {10.48550/arXiv.1910.11089}
+}
+
+@article{li2025ultraflwr,
+  author  = {Li, Yang and Kundu, Soumya Snigdha and Boels, Maxence and Mahmoodi, Toktam and Ourselin, Sebastien and Vercauteren, Tom and Dasgupta, Prokar and Shapey, Jonathan and Granados, Alejandro},
+  title   = {{UltraFlwr} -- An Efficient Federated Surgical Object Detection Framework},
+  journal = {arXiv preprint arXiv:2503.15161},
+  year    = {2025},
+  doi     = {10.48550/arXiv.2503.15161}
+}
+
+% ---------------------------------------------------------------- Kubic FLOTAC Microscope and its detector
+@article{cringoli2021kfm,
+  author  = {Cringoli, Giuseppe and Amadesi, Alessandra and Maurelli, Maria Paola and Celano, Biase and Piantadosi, Gabriele and Bosco, Antonio and Ciuca, Lavinia and Cesarelli, Mario and Bifulco, Paolo and Montresor, Antonio and Rinaldi, Laura},
+  title   = {The {Kubic FLOTAC} Microscope ({KFM}): a New Compact Digital Microscope for Helminth Egg Counts},
+  journal = {Parasitology},
+  volume  = {148},
+  number  = {4},
+  pages   = {427--434},
+  year    = {2021},
+  doi     = {10.1017/S003118202000219X}
+}
+
+@article{capuozzo2024aikfm,
+  author  = {Capuozzo, Salvatore and Marrone, Stefano and Gravina, Michela and Cringoli, Giuseppe and Rinaldi, Laura and Maurelli, Maria Paola and Bosco, Antonio and Orr{\`u}, Giulia and Marcialis, Gian Luca and Ghiani, Luca and Bini, Stefano and Saggese, Alessia and Vento, Mario and Sansone, Carlo},
+  title   = {Automating Parasite Egg Detection: Insights from the First {AI-KFM} Challenge},
+  journal = {Frontiers in Artificial Intelligence},
+  volume  = {7},
+  pages   = {1325219},
+  year    = {2024},
+  doi     = {10.3389/frai.2024.1325219}
+}
+
+@article{capuozzo2026ijp,
+  author  = {Capuozzo, Salvatore and Maurelli, Maria Paola and Marrone, Stefano and Celano, Biase and Martone, Giuseppe and Vitiello, Paola and Hammami, Ines and Bosco, Antonio and Ciuca, Lavinia and Cringoli, Giuseppe and Sansone, Carlo and Rinaldi, Laura},
+  title   = {A Dedicated Deep Learning Workflow for Automatic \textit{Fasciola hepatica} and \textit{Calicophoron daubneyi} Egg Detection Using the {Kubic FLOTAC} Microscope},
+  journal = {International Journal for Parasitology},
+  volume  = {56},
+  number  = {2},
+  pages   = {104719},
+  year    = {2026},
+  doi     = {10.1016/j.ijpara.2025.08.007}
+}
+
+@misc{capuozzo2025trematodes,
+  author       = {Capuozzo, Salvatore},
+  title        = {Trematodes {AI-KFM} Dataset},
+  howpublished = {Mendeley Data, V1},
+  doi          = {10.17632/6bjcxw8dx2.1},
+  year         = {2025}
+}
+
+% ---------------------------------------------------------------- robustness, privacy
+@inproceedings{blanchard2017krum,
+  author    = {Blanchard, Peva and El Mhamdi, El Mahdi and Guerraoui, Rachid and Stainer, Julien},
+  title     = {Machine Learning with Adversaries: {B}yzantine Tolerant Gradient Descent},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {30},
+  pages     = {119--129},
+  year      = {2017},
+  url       = {https://proceedings.neurips.cc/paper/2017/hash/f4b9ec30ad9f68f89b29639786cb62ef-Abstract.html},
+  note      = {No DOI or arXiv record}
+}
+
+@inproceedings{yin2018byzantine,
+  author    = {Yin, Dong and Chen, Yudong and Ramchandran, Kannan and Bartlett, Peter},
+  title     = {{B}yzantine-Robust Distributed Learning: Towards Optimal Statistical Rates},
+  booktitle = {Proceedings of the 35th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {80},
+  pages     = {5650--5659},
+  year      = {2018},
+  doi       = {10.48550/arXiv.1803.01498}
+}
+
+@inproceedings{damaskinos2018kardam,
+  author    = {Damaskinos, Georgios and El Mhamdi, El Mahdi and Guerraoui, Rachid and Patra, Rhicheek and Taziki, Mahsa},
+  title     = {Asynchronous {B}yzantine Machine Learning (the case of {SGD})},
+  booktitle = {Proceedings of the 35th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {80},
+  pages     = {1145--1154},
+  year      = {2018},
+  doi       = {10.48550/arXiv.1802.07928}
+}
+
+@article{sun2019backdoor,
+  author  = {Sun, Ziteng and Kairouz, Peter and Suresh, Ananda Theertha and McMahan, H. Brendan},
+  title   = {Can You Really Backdoor Federated Learning?},
+  journal = {arXiv preprint arXiv:1911.07963},
+  year    = {2019},
+  doi     = {10.48550/arXiv.1911.07963}
+}
+
+@inproceedings{bagdasaryan2020backdoor,
+  author    = {Bagdasaryan, Eugene and Veit, Andreas and Hua, Yiqing and Estrin, Deborah and Shmatikov, Vitaly},
+  title     = {How To Backdoor Federated Learning},
+  booktitle = {Proceedings of the 23rd International Conference on Artificial Intelligence and Statistics (AISTATS)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {108},
+  pages     = {2938--2948},
+  year      = {2020},
+  doi       = {10.48550/arXiv.1807.00459}
+}
+
+@inproceedings{fang2020local,
+  author    = {Fang, Minghong and Cao, Xiaoyu and Jia, Jinyuan and Gong, Neil Zhenqiang},
+  title     = {Local Model Poisoning Attacks to {B}yzantine-Robust Federated Learning},
+  booktitle = {29th USENIX Security Symposium},
+  pages     = {1605--1622},
+  year      = {2020},
+  doi       = {10.48550/arXiv.1911.11815}
+}
+
+@inproceedings{cao2021fltrust,
+  author    = {Cao, Xiaoyu and Fang, Minghong and Liu, Jia and Gong, Neil Zhenqiang},
+  title     = {{FLTrust}: {B}yzantine-Robust Federated Learning via Trust Bootstrapping},
+  booktitle = {Network and Distributed System Security Symposium (NDSS)},
+  year      = {2021},
+  doi       = {10.14722/ndss.2021.24434}
+}
+
+@inproceedings{andreina2021baffle,
+  author    = {Andreina, Sebastien and Marson, Giorgia Azzurra and M{\"o}llering, Helen and Karame, Ghassan},
+  title     = {{BaFFLe}: Backdoor Detection via Feedback-based Federated Learning},
+  booktitle = {IEEE 41st International Conference on Distributed Computing Systems (ICDCS)},
+  pages     = {852--863},
+  year      = {2021},
+  doi       = {10.1109/ICDCS51616.2021.00086}
+}
+
+@misc{guerraoui2024bn,
+  author       = {Guerraoui, Rachid and Pinot, Rafael and Rizk, Geovani and Stephan, John and Taiani, Fran{\c{c}}ois},
+  title        = {Overcoming the Challenges of Batch Normalization in Federated Learning},
+  howpublished = {arXiv preprint arXiv:2405.14670},
+  year         = {2024},
+  doi          = {10.48550/arXiv.2405.14670}
+}
+
+@inproceedings{chan2022baddet,
+  author    = {Chan, Shih-Han and Dong, Yinpeng and Zhu, Jun and Zhang, Xiaolu and Zhou, Jun},
+  title     = {{BadDet}: Backdoor Attacks on Object Detection},
+  booktitle = {Computer Vision -- ECCV 2022 Workshops},
+  series    = {Lecture Notes in Computer Science},
+  pages     = {396--412},
+  publisher = {Springer},
+  year      = {2023},
+  doi       = {10.1007/978-3-031-25056-9_26}
+}
+
+@article{xia2023poisoningsurvey,
+  author  = {Xia, Geming and Chen, Jian and Yu, Chaodong and Ma, Jun},
+  title   = {Poisoning Attacks in Federated Learning: A Survey},
+  journal = {IEEE Access},
+  volume  = {11},
+  pages   = {10708--10722},
+  year    = {2023},
+  doi     = {10.1109/ACCESS.2023.3238823}
+}
+
+@article{li2024byzantinestudy,
+  author  = {Li, Shenghui and Ngai, Edith C.-H. and Voigt, Thiemo},
+  title   = {An Experimental Study of {B}yzantine-Robust Aggregation Schemes in Federated Learning},
+  journal = {IEEE Transactions on Big Data},
+  volume  = {10},
+  number  = {6},
+  pages   = {975--988},
+  year    = {2024},
+  doi     = {10.1109/TBDATA.2023.3237397}
+}
+
+@inproceedings{garg2024poisoningad,
+  author    = {Garg, Sonakshi and J{\"o}nsson, Hugo and Kalander, Gustav and Nilsson, Axel and Pirange, Bhhaanu and Valadi, Viktor and {\"O}stman, Johan},
+  title     = {Poisoning Attacks on Federated Learning for Autonomous Driving},
+  booktitle = {Proceedings of the Swedish Artificial Intelligence Society Workshop (SAIS)},
+  series    = {Link{\"o}ping Electronic Conference Proceedings},
+  volume    = {208},
+  pages     = {11--18},
+  year      = {2024},
+  doi       = {10.3384/ecp208002}
+}
+
+@inproceedings{zhu2019dlg,
+  author    = {Zhu, Ligeng and Liu, Zhijian and Han, Song},
+  title     = {Deep Leakage from Gradients},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {32},
+  year      = {2019},
+  doi       = {10.48550/arXiv.1906.08935}
+}
+
+@inproceedings{geiping2020inverting,
+  author    = {Geiping, Jonas and Bauermeister, Hartmut and Dr{\"o}ge, Hannah and Moeller, Michael},
+  title     = {Inverting Gradients -- How Easy Is It to Break Privacy in Federated Learning?},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {33},
+  year      = {2020},
+  doi       = {10.48550/arXiv.2003.14053}
+}
+
+@inproceedings{bonawitz2017secagg,
+  author    = {Bonawitz, Keith and Ivanov, Vladimir and Kreuter, Ben and Marcedone, Antonio and McMahan, H. Brendan and Patel, Sarvar and Ramage, Daniel and Segal, Aaron and Seth, Karn},
+  title     = {Practical Secure Aggregation for Privacy-Preserving Machine Learning},
+  booktitle = {Proceedings of the 2017 ACM SIGSAC Conference on Computer and Communications Security (CCS)},
+  pages     = {1175--1191},
+  year      = {2017},
+  doi       = {10.1145/3133956.3133982}
+}
+
+@inproceedings{mcmahan2018dp,
+  author    = {McMahan, H. Brendan and Ramage, Daniel and Talwar, Kunal and Zhang, Li},
+  title     = {Learning Differentially Private Recurrent Language Models},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2018},
+  doi       = {10.48550/arXiv.1710.06963}
+}
+
+% ---------------------------------------------------------------- trustworthy AI, regulation
+@article{tariq2023trustworthy,
+  author  = {Tariq, Asadullah and Serhani, Mohamed Adel and Sallabi, Farag and Qayyum, Tariq and Barka, Ezedin S. and Shuaib, Khaled A.},
+  title   = {Trustworthy Federated Learning: A Survey},
+  journal = {arXiv preprint arXiv:2305.11537},
+  year    = {2023},
+  doi     = {10.48550/arXiv.2305.11537}
+}
+
+@article{sanchez2023federatedtrust,
+  author  = {S{\'a}nchez S{\'a}nchez, Pedro Miguel and Huertas Celdr{\'a}n, Alberto and Xie, Ning and Bovet, G{\'e}r{\^o}me and Mart{\'\i}nez P{\'e}rez, Gregorio and Stiller, Burkhard},
+  title   = {{FederatedTrust}: A Solution for Trustworthy Federated Learning},
+  journal = {Future Generation Computer Systems},
+  volume  = {152},
+  pages   = {83--98},
+  year    = {2024},
+  doi     = {10.1016/j.future.2023.10.013}
+}
+
+@misc{hleg2019ethics,
+  author       = {{High-Level Expert Group on Artificial Intelligence}},
+  title        = {Ethics Guidelines for Trustworthy {AI}},
+  howpublished = {European Commission, Publications Office of the European Union},
+  year         = {2019},
+  doi          = {10.2759/346720}
+}
+
+@misc{euaiact2024,
+  author       = {{European Parliament and Council of the European Union}},
+  title        = {Regulation ({EU}) 2024/1689 laying down harmonised rules on artificial intelligence ({Artificial Intelligence Act})},
+  howpublished = {Official Journal of the European Union, L series, 12 July 2024},
+  url          = {http://data.europa.eu/eli/reg/2024/1689/oj},
+  year         = {2024}
+}
+
+@techreport{nist2023rmf,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {Artificial Intelligence Risk Management Framework ({AI RMF} 1.0)},
+  institution = {NIST},
+  number      = {NIST AI 100-1},
+  doi         = {10.6028/NIST.AI.100-1},
+  year        = {2023}
+}
+
+% ---------------------------------------------------------------- statistics and research practice
+@article{piaggio2012consort,
+  author  = {Piaggio, Gilda and Elbourne, Diana R. and Pocock, Stuart J. and Evans, Stephen J. W. and Altman, Douglas G.},
+  title   = {Reporting of Noninferiority and Equivalence Randomized Trials: Extension of the {CONSORT} 2010 Statement},
+  journal = {JAMA},
+  volume  = {308},
+  number  = {24},
+  pages   = {2594--2604},
+  year    = {2012},
+  doi     = {10.1001/jama.2012.87802}
+}
+
+@article{berger1996iut,
+  author  = {Berger, Roger L. and Hsu, Jason C.},
+  title   = {Bioequivalence Trials, Intersection-Union Tests and Equivalence Confidence Sets},
+  journal = {Statistical Science},
+  volume  = {11},
+  number  = {4},
+  pages   = {283--319},
+  year    = {1996},
+  doi     = {10.1214/ss/1032280304}
+}
+
+@article{wiens2003fixed,
+  author  = {Wiens, Brian L.},
+  title   = {A Fixed Sequence {B}onferroni Procedure for Testing Multiple Endpoints},
+  journal = {Pharmaceutical Statistics},
+  volume  = {2},
+  number  = {3},
+  pages   = {211--215},
+  year    = {2003},
+  doi     = {10.1002/pst.64}
+}
+
+@article{nosek2018prereg,
+  author  = {Nosek, Brian A. and Ebersole, Charles R. and DeHaven, Alexander C. and Mellor, David T.},
+  title   = {The Preregistration Revolution},
+  journal = {Proceedings of the National Academy of Sciences},
+  volume  = {115},
+  number  = {11},
+  pages   = {2600--2606},
+  year    = {2018},
+  doi     = {10.1073/pnas.1708274114}
+}
+
+@inproceedings{bouthillier2021variance,
+  author    = {Bouthillier, Xavier and Delaunay, Pierre and Bronzi, Mirko and Trofimov, Assya and Nichyporuk, Brennan and Szeto, Justin and Mohammadi Sepahvand, Nazanin and Raff, Edward and Madan, Kanika and Voleti, Vikram and Ebrahimi Kahou, Samira and Michalski, Vincent and Serdyuk, Dmitriy and Arbel, Tal and Pal, Chris and Varoquaux, Ga{\"e}l and Vincent, Pascal},
+  title     = {Accounting for Variance in Machine Learning Benchmarks},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
+  volume    = {3},
+  year      = {2021},
+  doi       = {10.48550/arXiv.2103.03098}
+}
+
+% ---------------------------------------------------------------- datasets
+@article{acevedo2020pbc,
+  author  = {Acevedo, Andrea and Merino, Anna and Alf{\'e}rez, Santiago and Molina, {\'A}ngel and Bold{\'u}, Laura and Rodellar, Jos{\'e}},
+  title   = {A Dataset of Microscopic Peripheral Blood Cell Images for Development of Automatic Recognition Systems},
+  journal = {Data in Brief},
+  volume  = {30},
+  pages   = {105474},
+  year    = {2020},
+  doi     = {10.1016/j.dib.2020.105474}
+}
+
+@misc{wbcdetection,
+  author       = {{medmabcf}},
+  title        = {White-Blood-Cell-Detection-Dataset},
+  howpublished = {\url{https://github.com/medmabcf/White-Blood-Cell-Detection-Dataset}},
+  note         = {Bounding boxes for PBC\_dataset\_normal\_DIB, CC BY 4.0; no DOI},
+  year         = {2023}
+}
+
+@article{liu2020chestxdet10,
+  author  = {Liu, Jingyu and Lian, Jie and Yu, Yizhou},
+  title   = {{ChestX-Det10}: Chest {X}-ray Dataset on Detection of Thoracic Abnormalities},
+  journal = {arXiv preprint arXiv:2006.10550},
+  year    = {2020},
+  doi     = {10.48550/arXiv.2006.10550}
+}
+
+@inproceedings{wang2017chestxray8,
+  author    = {Wang, Xiaosong and Peng, Yifan and Lu, Le and Lu, Zhiyong and Bagheri, Mohammadhadi and Summers, Ronald M.},
+  title     = {{ChestX-ray8}: Hospital-Scale Chest {X}-Ray Database and Benchmarks on Weakly-Supervised Classification and Localization of Common Thorax Diseases},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {3462--3471},
+  year      = {2017},
+  doi       = {10.1109/CVPR.2017.369}
+}
+
+@article{hamamci2023dentex,
+  author  = {Hamamci, Ibrahim Ethem and Er, Sezgin and Durugol, Omer Faruk and Cakmak, Gulsade Rabia and de la Rosa, Ezequiel and Simsar, Enis and others},
+  title   = {{DENTEX}: Dental Enumeration and Tooth Pathosis Detection Benchmark for Panoramic {X}-ray},
+  journal = {arXiv preprint arXiv:2305.19112},
+  year    = {2023},
+  doi     = {10.48550/arXiv.2305.19112}
+}
+
+% ---- cited only in the Supplementary Information
+
+@inproceedings{yoon2021fedweit,
+  author    = {Yoon, Jaehong and Jeong, Wonyong and Lee, Giwoong and Yang, Eunho and Hwang, Sung Ju},
+  title     = {Federated Continual Learning with Weighted Inter-client Transfer},
+  booktitle = {Proceedings of the 38th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {139},
+  year      = {2021},
+  doi       = {10.48550/arXiv.2003.03196}
+}
+
+@inproceedings{wang2021fedfv,
+  author    = {Wang, Zheng and Fan, Xiaoliang and Qi, Jianzhong and Wen, Chenglu and Wang, Cheng and Yu, Rongshan},
+  title     = {Federated Learning with Fair Averaging},
+  booktitle = {Proceedings of the 30th International Joint Conference on Artificial Intelligence (IJCAI)},
+  pages     = {1615--1623},
+  year      = {2021},
+  doi       = {10.24963/ijcai.2021/223}
+}
+
+@inproceedings{zheng2017dcasgd,
+  author    = {Zheng, Shuxin and Meng, Qi and Wang, Taifeng and Chen, Wei and Yu, Nenghai and Ma, Zhi-Ming and Liu, Tie-Yan},
+  title     = {Asynchronous Stochastic Gradient Descent with Delay Compensation},
+  booktitle = {Proceedings of the 34th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {70},
+  year      = {2017},
+  doi       = {10.48550/arXiv.1609.08326}
+}
+
+@inproceedings{lee2022fedntd,
+  author    = {Lee, Gihun and Jeong, Minchan and Shin, Yongjin and Bae, Sangmin and Yun, Se-Young},
+  title     = {Preservation of the Global Knowledge by Not-True Distillation in Federated Learning},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {35},
+  pages     = {38461--38474},
+  year      = {2022},
+  doi       = {10.52202/068431-2787}
+}
+
+@article{shoham2019fedcurv,
+  author  = {Shoham, Neta and Avidor, Tomer and Keren, Aviv and Israel, Nadav and Benditkis, Daniel and Mor-Yosef, Liron and Zeitak, Itai},
+  title   = {Overcoming Forgetting in Federated Learning on Non-{IID} Data},
+  journal = {arXiv preprint arXiv:1910.07796},
+  year    = {2019},
+  doi     = {10.48550/arXiv.1910.07796}
+}
+
+@inproceedings{gupta2019lvis,
+  author    = {Gupta, Agrim and Doll{\'a}r, Piotr and Girshick, Ross},
+  title     = {{LVIS}: A Dataset for Large Vocabulary Instance Segmentation},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {5351--5359},
+  year      = {2019},
+  doi       = {10.1109/CVPR.2019.00550}
+}
+
+@inproceedings{zhang2022fedlc,
+  author    = {Zhang, Jie and Li, Zhiqi and Li, Bo and Xu, Jianghe and Wu, Shuang and Ding, Shouhong and Wu, Chao},
+  title     = {Federated Learning with Label Distribution Skew via Logits Calibration},
+  booktitle = {Proceedings of the 39th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {162},
+  year      = {2022},
+  doi       = {10.48550/arXiv.2209.00189}
+}
+
+@inproceedings{shang2022creff,
+  author    = {Shang, Xinyi and Lu, Yang and Huang, Gang and Wang, Hanzi},
+  title     = {Federated Learning on Heterogeneous and Long-Tailed Data via Classifier Re-training with Federated Features},
+  booktitle = {Proceedings of the 31st International Joint Conference on Artificial Intelligence (IJCAI)},
+  pages     = {2218--2224},
+  year      = {2022},
+  doi       = {10.24963/ijcai.2022/308}
+}
+
+@article{prakash2021coded,
+  author  = {Prakash, Saurav and Dhakal, Sagar and Akdeniz, Mustafa Riza and Yona, Yair and Talwar, Shilpa and Avestimehr, Salman and Himayat, Nageen},
+  title   = {Coded Computing for Low-Latency Federated Learning Over Wireless Edge Networks},
+  journal = {IEEE Journal on Selected Areas in Communications},
+  volume  = {39},
+  number  = {1},
+  pages   = {233--250},
+  year    = {2021},
+  doi     = {10.1109/JSAC.2020.3036961}
+}
+
+@article{chang2018distributed,
+  author  = {Chang, Ken and Balachandar, Niranjan and Lam, Carson and Yi, Darvin and Brown, James and Beers, Andrew and Rosen, Bruce and Rubin, Daniel L. and Kalpathy-Cramer, Jayashree},
+  title   = {Distributed Deep Learning Networks among Institutions for Medical Imaging},
+  journal = {Journal of the American Medical Informatics Association},
+  volume  = {25},
+  number  = {8},
+  pages   = {945--954},
+  year    = {2018},
+  doi     = {10.1093/jamia/ocy017}
+}
+
+@article{rashidi2024federated,
+  author  = {Rashidi, Gabriel and Bounias, Dimitrios and Bujotzek, Markus and Mart{\'i}nez Mora, Andr{\'e}s and Neher, Peter and Maier-Hein, Klaus H.},
+  title   = {The Potential of Federated Learning for Self-Configuring Medical Object Detection in Heterogeneous Data Distributions},
+  journal = {Scientific Reports},
+  volume  = {14},
+  pages   = {23844},
+  year    = {2024},
+  doi     = {10.1038/s41598-024-74577-0}
+}
+
+@article{yamada2024distributed,
+  author  = {Yamada, Aiki and Hanaoka, Shouhei and Takenaga, Tomomi and Miki, Soichiro and Yoshikawa, Takeharu and Nomura, Yukihiro},
+  title   = {Investigation of Distributed Learning for Automated Lesion Detection in Head {MR} Images},
+  journal = {Radiological Physics and Technology},
+  volume  = {17},
+  number  = {3},
+  pages   = {725--738},
+  year    = {2024},
+  doi     = {10.1007/s12194-024-00827-5}
+}
+
+@misc{cherukuri2025cav,
+  author       = {Cherukuri, Komala Subramanyam and Sha, Kewei and Huang, Zhenhua},
+  title        = {Enabling Federated Object Detection for Connected Autonomous Vehicles: A Deployment-Oriented Evaluation},
+  howpublished = {arXiv:2509.01868},
+  year         = {2025},
+  doi          = {10.48550/arXiv.2509.01868}
+}
+
+@inproceedings{zhao2020unified,
+  author    = {Zhao, Xiangyun and Schulter, Samuel and Sharma, Gaurav and Tsai, Yi-Hsuan and Chandraker, Manmohan and Wu, Ying},
+  title     = {Object Detection with a Unified Label Space from Multiple Datasets},
+  booktitle = {Computer Vision -- ECCV 2020},
+  series    = {Lecture Notes in Computer Science},
+  pages     = {178--193},
+  publisher = {Springer},
+  year      = {2020},
+  doi       = {10.1007/978-3-030-58568-6_11}
+}
