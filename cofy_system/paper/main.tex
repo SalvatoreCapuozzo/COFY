@@ -165,35 +165,7 @@ where $\Delta$ is the node's change from the model it pulled~\cite{xie2019fedasy
 
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[x=0.92cm,y=0.36cm,font=\scriptsize]
-  \definecolor{nA}{RGB}{120,160,220}\definecolor{nB}{RGB}{240,170,90}
-  \definecolor{nC}{RGB}{120,190,120}\definecolor{nD}{RGB}{185,140,200}
-  \newcommand{\job}[4]{\fill[#4] (#1,#3-0.38) rectangle (#2,#3+0.38); \draw[black!60] (#1,#3-0.38) rectangle (#2,#3+0.38);}
-  \newcommand{\lanes}[1]{\foreach \n/\y in {A/3,B/2,C/1,D/0} {\node[anchor=east] at (-0.1,#1+\y) {node \n};}}
-  % (a) parallel synchronous: lanes 14-17
-  \node[anchor=west,font=\small\bfseries] at (-1.6,19.0) {(a) FedAvg: parallel synchronous};
-  \lanes{14}
-  \foreach \s in {0,1.55} {
-    \job{\s}{\s+1.2}{17}{nA}\job{\s}{\s+1.0}{16}{nB}\job{\s}{\s+0.8}{15}{nC}\job{\s}{\s+1.4}{14}{nD}
-    \draw[dashed,thick] (\s+1.45,13.4) -- (\s+1.45,17.6);
-  }
-  \node[anchor=west] at (3.3,15.5) {barrier: every round waits for the slowest node};
-  % (b) sequential synchronous: lanes 6-9, cycle labels in their own row above the lanes
-  \node[anchor=west,font=\small\bfseries] at (-1.6,12.0) {(b) CWT: sequential, server-scheduled turns};
-  \lanes{6}
-  \job{0}{1.0}{8}{nB}\job{1.0}{2.2}{9}{nA}\job{2.2}{3.6}{6}{nD}\job{3.6}{4.4}{7}{nC}
-  \job{4.4}{5.6}{9}{nA}\job{5.6}{6.4}{7}{nC}\job{6.4}{7.4}{8}{nB}\job{7.4}{8.8}{6}{nD}
-  \draw[dashed,thick] (4.4,5.4) -- (4.4,10.3);
-  \node[anchor=west] at (0,10.3) {cycle 1}; \node[anchor=west] at (4.5,10.3) {cycle 2};
-  % (c) concurrent asynchronous: lanes 0-3
-  \node[anchor=west,font=\small\bfseries] at (-1.6,4.45) {(c) FedAsync: concurrent, merged on arrival};
-  \lanes{0}
-  \job{0}{1.2}{3}{nA}\job{1.2}{2.4}{3}{nA}\job{0}{1.0}{2}{nB}\job{1.0}{2.0}{2}{nB}
-  \job{0}{0.8}{1}{nC}\job{0.8}{1.6}{1}{nC}\job{0}{1.4}{0}{nD}\job{1.4}{2.8}{0}{nD}
-  \draw[black!50] (0,-1.1) -- (2.9,-1.1); \foreach \t in {0.8,1.0,1.2,1.4,1.6,2.0,2.4,2.8} {\fill (\t,-1.1) circle[radius=1.6pt];}
-  \node[anchor=west] at (3.3,-1.1) {server: one merge per arrival};
-  \draw[->] (0,-2.5) -- (9,-2.5) node[anchor=west] {time};
-\end{tikzpicture}
+\input{figures/schemes.tex}
 \caption{The three schemes with four nodes of different speeds, two cycles each. In (a), nodes train in parallel and the server averages after a barrier. In (b), one node trains at a time, starting from the previous node's model, in a new random order every cycle. In (c), nodes train concurrently and each update is merged on arrival. Every scheme trains the same number of node-epochs. CWT needs about three times the wall-clock time (Section~\ref{sec:res-fair}).}\label{fig:schemes}
 \end{figure}
 

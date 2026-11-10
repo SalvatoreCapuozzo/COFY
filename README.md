@@ -11,15 +11,35 @@ and Analysis of Reliability and Robustness* (source in [`cofy_system/paper/`](co
 
 **Try it on one machine:** `cd cofy_system && python demo/run_demo.py --use-case wbc --scheme sequential`
 runs a real four-node federation over HTTP with small samples of the three use cases.
-Online: [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SalvatoreCapuozzo/DAFYOLO/blob/master/cofy_system/demo/COFY_demo.ipynb)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/SalvatoreCapuozzo/DAFYOLO)
+Online: [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SalvatoreCapuozzo/COFY/blob/master/cofy_system/demo/COFY_demo.ipynb)
 
+- [How it works](#how-it-works)
 - [Repository layout](#repository-layout)
 - [1. Install (every machine)](#1-install-every-machine)
 - [2. Data](#2-data)
 - [3. Federation over a local network: server and clients](#3-federation-over-a-local-network-server-and-clients)
 - [4. Reproducing the study on one machine](#4-reproducing-the-study-on-one-machine)
+- [5. Robustness: attacks and defences](#5-robustness-attacks-and-defences)
 - [Licence](#licence)
+
+## How it works
+
+![COFY: the model's shared parameters and class rows, and the federation with its steps 1-7](cofy_system/docs/img/architecture.png)
+
+Every parameter of the detector is shared and merged from every node, except the **class rows**: the row
+of each class in the last convolution of the classification branch, which only the class's owner changes.
+Each node downloads the global model (1), trains on its own images with a loss that ignores the classes it
+does not own (2) and uploads its change (3); the server takes each class's rows only from its owner (4),
+bounds each part of the update (5) and merges it (6). After the last update, a calibration re-aligns
+BatchNorm statistics and class rows (7). The server holds no data. The three ways to merge:
+
+![FedAvg, CWT and FedAsync on four nodes of different speeds](cofy_system/docs/img/schemes.png)
+
+The three use cases cover the ways classes can share an image: never (WBC, one cell per image), sometimes
+(KFM12, a few parasite eggs) and always (DENTEX, every tooth is a class); every object is coloured by the
+node that owns its class:
+
+![One image of each use case, objects coloured by their owner node](cofy_system/paper/figures/usecases.png)
 
 ## Repository layout
 
@@ -36,7 +56,7 @@ cofy_system/                 the system and the study (run every command from he
   _frozen/confirm/           frozen code of the confirmatory study (never edit; hashed)
   data/, runs/               local data and outputs (not in git)
 MULTI_MACHINE_EXPERIMENTS.md the experiments to run on several machines, step by step
-legacy/                      the earlier DAFYOLO prototype, reports and its data (not used by COFY)
+legacy/                      the earlier prototype, reports and its data (not used by COFY)
 ```
 
 ## 1. Install (every machine)
@@ -46,8 +66,8 @@ automatically (`federation.device: auto`: CUDA, then MPS, then CPU). The study i
 
 ```bash
 git clone <repository URL> cofy && cd cofy/cofy_system
-conda create -n dafyolo python=3.10 -y && conda activate dafyolo
-conda env config vars set PYTHONNOUSERSITE=1 -n dafyolo && conda activate dafyolo   # ignore ~/.local packages
+conda create -n cofy python=3.10 -y && conda activate cofy
+conda env config vars set PYTHONNOUSERSITE=1 -n cofy && conda activate cofy   # ignore ~/.local packages
 # PyTorch: on Linux the CUDA build for your driver (https://pytorch.org/get-started), e.g.
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 # on macOS the default build, which includes MPS:  pip install torch torchvision
@@ -102,7 +122,7 @@ Full guide, with screenshots, security and troubleshooting:
 **Server** (e.g. machine M1; its address from `hostname -I` on Linux or `ipconfig getifaddr en0` on macOS, say `192.168.1.10`):
 
 ```bash
-cd cofy_system && conda activate dafyolo
+cd cofy_system && conda activate cofy
 sudo ufw allow 8900/tcp      # Linux, only if ufw is active; macOS: allow incoming connections for Python when asked
 python tools/launch_detached.py runs/net_server.log -- \
     python -m cofy.net.server_app --port 8900 --config-dir configs/net
@@ -114,10 +134,14 @@ give the room an id and **Create room**; send the server URL, the room id and th
 node operators. Add `--developer-mode` to let the server evaluate the model (it then reads the
 evaluation set on M1; for experiments only).
 
+| Server: create a room from a config | Server: the room, its password and its nodes |
+|---|---|
+| ![Server dashboard, create a room](cofy_system/docs/img/net_01_server_create_room.png) | ![Room waiting to start, node B joined](cofy_system/docs/img/net_03_server_room_ready.png) |
+
 **Client**, one per node, on the machine that holds the node's folder:
 
 ```bash
-cd cofy_system && conda activate dafyolo
+cd cofy_system && conda activate cofy
 python tools/launch_detached.py runs/client_node_B.log -- python -m cofy.net.client_app --port 8901
 ```
 
@@ -127,6 +151,13 @@ fill in server URL `http://192.168.1.10:8900`, room id and password, **Reclaim n
 **Join & prepare**. A second node on the same machine uses another port (`--port 8902`). When every node
 has joined, the server operator presses **Start federation** and each node **Start training**; nodes then
 train, upload and wait on their own, and run the calibration at the end.
+
+| Client: join a room as a node | Server: a room during training |
+|---|---|
+| ![Client page after joining as node B](cofy_system/docs/img/net_02_client_join.png) | ![Room during training, with its checkpoints](cofy_system/docs/img/net_04_server_room_training.png) |
+
+The training view is from an earlier version of the dashboard, under the system's former name; the layout
+is the same.
 
 All machines must be on the same network (Wi-Fi works: one model download and one upload of about
 100 MB per node and update) and must not go to sleep during a run. HTTPS: section 9 of the guide.
@@ -145,6 +176,29 @@ python -m cofy.simulate --config configs/variants/confirm_v2sync/wbc_s100.yaml -
 Pre-registration, amendments and manifests: `cofy_system/analysis/CONFIRMATORY_PREREG.md`; check that the
 frozen confirmatory code is unchanged with `python tools/confirm_manifest.py --check`. More on the
 package, configuration keys and architectures: [`cofy_system/README.md`](cofy_system/README.md).
+
+## 5. Robustness: attacks and defences
+
+One node of four is the attacker. Its data attacks and what the attacked models detect (robustness
+study, WBC):
+
+![Attacks on images of the three use cases and the outputs of attacked WBC models](cofy_system/paper/figures/attacks.png)
+
+Two attacks that a defence resisted, on a WBC evaluation image: ground truth, the attacked federation, and
+the federation with the defence (`tools/make_resilience_figure.py`):
+
+![Ground truth, attacked and defended outputs for BatchNorm poisoning and a backdoor](cofy_system/docs/img/resisted_attacks.png)
+
+What the defences do (details and numbers: Section 5.4 of the article):
+- **Neutralized** by ownership-aware robust aggregation: boosted updates, inflated image counts and nodes
+  claiming other nodes' classes.
+- **Undone by the calibration**: BatchNorm poisoning; pooling the statistics by their median also holds when
+  the attacker poisons the calibration itself (top row).
+- **Not stopped in training**: a backdoor in the attacker's own class succeeds on every triggered image;
+  screening inputs at the nodes removed it in 15 of 18 runs, at a cost in false alarms (bottom row).
+- **Not stopped**: a node that reverses its updates collapses every scheme; a per-class detection budget
+  confines the damage to its own classes. Peer validation with per-class rollback (in progress) rolls the
+  attacker's class back, but the frozen class still fires as the shared layers move on.
 
 ## Licence
 

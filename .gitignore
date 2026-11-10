@@ -16,6 +16,7 @@ __pycache__
 .vscode
 cofy_system/data/
 .claude
+*.pt
 # prototype data and outputs, moved to legacy/ on 2026-11-10 (large, local only)
 legacy/data/
 # outputs of the multi-machine experiments (MULTI_MACHINE_EXPERIMENTS.md) are local too
