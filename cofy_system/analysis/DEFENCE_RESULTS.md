@@ -87,7 +87,7 @@ mAP50 as Fed:Cent (%), mean over seeds: last global version (as the robustness t
 
 ## P3: peer validation with per-class rollback
 
-mAP50 as Fed:Cent (%), mean over seeds (columns as for P4). Rolled back: classes quarantined, with the version, per seed; attacker's = the attacker's own classes (wanted), other = honest classes (false alarms; the node named as attacker also lies in its reports in the clean twins).
+mAP50 as Fed:Cent (%), mean over seeds (columns as for P4). Rolled back: classes quarantined, with the version, per seed; attacker's = the attacker's own classes (wanted), other = honest classes (false alarms; the node named as attacker also lies in its reports in the clean twins). Rows *_p3x_*: P3b, the owner of a rolled-back class is also excluded; their 'without' columns are P3 without the exclusion.
 
 | run | n | last version | saved, standard | saved, per-class budget | without P3: last version | without P3: saved, per-class budget | rolled back: attacker's / other (versions) |
 |---|---|---|---|---|---|---|---|
@@ -97,3 +97,6 @@ mAP50 as Fed:Cent (%), mean over seeds (columns as for P4). Rolled back: classes
 | rb_seq_clean_ora_p3_budget | 3 | 98 | 97 | 97 | 100 | 99 | s0: - / -; s1: - / -; s2: - / - |
 | rb_conc_clean_ora_p3_budget | 3 | 110 | 107 | 107 | 109 | 109 | s0: - / -; s1: - / -; s2: - / - |
 | rb_par_clean_ora_p3_budget | 3 | 115 | 115 | 115 | 103 | 103 | s0: - / -; s1: - / -; s2: - / - |
+| rb_seq_signflip_ora_p3x_budget | 3 | 77 | 73 | 74 | 31 | 75 | s0: neutrophil@9 / -; s1: eosinophil@7 / -; s2: erythroblast@7,immunoglobulin@7 / - |
+| rb_conc_signflip_ora_p3x_budget | 3 | 97 | 95 | 95 | 17 | 85 | s0: neutrophil@7 / -; s1: eosinophil@7 / -; s2: erythroblast@30 / - |
+| rb_par_signflip_ora_p3x_budget | 3 | 97 | 97 | 97 | 91 | 91 | s0: neutrophil@4 / -; s1: eosinophil@3 / -; s2: erythroblast@3,immunoglobulin@4 / - |

@@ -202,3 +202,27 @@ Rows still only ever hold values their owner produced (R3); the server holds no 
 vote check was mutation-tested). Runs: `rb_{seq,conc,par}_signflip_ora_p3x_budget`, WBC seeds 0-2, compared
 with P3 in `tools/defence_eval.py --report`. Clean twins are not re-run: without a rollback there is no
 exclusion, and P3 rolled back nothing in its nine clean runs.
+
+**P3b result (9 runs, finished 2026-11-11).** Last global version as Fed:Cent (%), mean of seeds 0-2:
+
+| scheme | P3b | P3 (rollback only) | without P3 | other nodes' classes, mAP50 (clean twins) | frozen rows' coverage at the end (P3) |
+|---|---|---|---|---|---|
+| CWT | 77 (67-90) | 31 | 0 | 0.49-0.57 (0.55-0.58) | 0-15 % (6-12 %) |
+| FedAsync | 97 (76-118) | 17 | 1 | 0.55-0.75 (0.61-0.66) | 2-8 % (3-29 %) |
+| FedAvg | 97 (80-113) | 91 | 0 | 0.58-0.72 (0.63-0.68) | 0-4 % (0-6 %) |
+
+- Detection as in P3: the attacker's classes in 9 of 9 runs (3rd-30th check; the FedAsync seed 2 flagged only
+  at the 30th check, its second class was never rolled back but froze with the exclusion); no honest class rolled
+  back in the 27 P3/P3b runs.
+- The attacker's classes stay at mAP50 0 in every run, as under P3 and the per-class budget: only it has data for
+  them.
+- The per-class budget no longer changes anything (final models within 0.004 mAP50 of standard evaluation;
+  under P3 it raised CWT/FedAsync from 19/10 to 75/85): the frozen rows still fire, since the shared layers move
+  under them, but no longer crowd out the other classes.
+- CWT stays below the clean twins in two seeds (honest classes -0.07 and -0.06): plausibly the attacker's
+  reversed shared-layer updates merged before the exclusion (2 uploads in CWT, 2-5 in FedAsync), which CWT's
+  sequential turns carry forward; not tested.
+- Discarded uploads count toward the 40-update budget, but they are the attacker's own: every honest node
+  merged 10 uploads, as in the clean runs (robust_log.jsonl).
+- In the paper: Table `tab:candidates` row 6, the paragraph after it, intro bullet, discussion, conclusion,
+  limitations (exclusion added after the P3 results). Not in the abstract (at 249 of 250 words).
