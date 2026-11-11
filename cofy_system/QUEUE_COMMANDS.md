@@ -1,11 +1,11 @@
 # Variant queue — control and monitoring commands
 
-Run everything from `~/DAFYOLO/cofy_system`. Commands that start Python need the
-`dafyolo` environment:
+Run everything from `~/COFY/cofy_system`. Commands that start Python need the
+`cofy` environment:
 
 ```bash
-cd ~/DAFYOLO/cofy_system
-conda activate dafyolo
+cd ~/COFY/cofy_system
+conda activate cofy
 ```
 
 The queue runs the variants listed in `runs/variants/_plan.txt`, in order, 3 datasets
@@ -94,10 +94,10 @@ Don't reboot or suspend the machine while frozen.
 
 ```bash
 # pause
-pkill -STOP -f "tools/run_variant[.]py|cofy[.]simulate|envs/dafyolo/bin/python -s -c from multiprocessing"
+pkill -STOP -f "tools/run_variant[.]py|cofy[.]simulate|envs/cofy/bin/python -s -c from multiprocessing"
 
 # resume
-pkill -CONT -f "tools/run_variant[.]py|cofy[.]simulate|envs/dafyolo/bin/python -s -c from multiprocessing"
+pkill -CONT -f "tools/run_variant[.]py|cofy[.]simulate|envs/cofy/bin/python -s -c from multiprocessing"
 ```
 
 The 10-minute status lines keep appearing while frozen; ignore them.
@@ -115,7 +115,7 @@ Order matters: queue manager first, so it can't start the next variant.
 pkill -f "runs/variants/_queue[.]sh"                           # 1. queue manager (and its status ticker)
 pkill -f "tools/(run_variant|calibrate_checkpoints|run_baseline)[.]py"   # 2. runner (training, calibration or baseline)
 pkill -f "cofy[.]simulate"                                  # 3. training run in progress
-sleep 5; pkill -f "envs/dafyolo/bin/python -s -c from multiprocessing"   # 4. leftover worker processes
+sleep 5; pkill -f "envs/cofy/bin/python -s -c from multiprocessing"   # 4. leftover worker processes
 nvidia-smi                                                     # GPU should be back to ~9 MiB
 ```
 
@@ -129,7 +129,7 @@ If `nvidia-smi` still shows memory in use, find the process and kill it by PID:
 A reboot kills the queue: it does **not** restart on its own.
 
 ```bash
-cd ~/DAFYOLO/cofy_system && conda activate dafyolo
+cd ~/COFY/cofy_system && conda activate cofy
 pgrep -fl "_queue[.]sh|tools/(run_variant|calibrate_checkpoints|run_baseline)[.]py|cofy[.]simulate"   # must print nothing
 python tools/launch_detached.py runs/variants/_queue.log -- /bin/bash runs/variants/_queue.sh
 tail -f runs/variants/_queue.log

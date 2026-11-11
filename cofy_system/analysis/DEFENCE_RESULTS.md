@@ -91,4 +91,9 @@ mAP50 as Fed:Cent (%), mean over seeds (columns as for P4). Rolled back: classes
 
 | run | n | last version | saved, standard | saved, per-class budget | without P3: last version | without P3: saved, per-class budget | rolled back: attacker's / other (versions) |
 |---|---|---|---|---|---|---|---|
-| rb_seq_signflip_ora_p3_budget | 1 | 45 | - | - | 0 | 80 | s0: neutrophil@12 / - |
+| rb_seq_signflip_ora_p3_budget | 3 | 31 | 19 | 75 | 0 | 82 | s0: neutrophil@12 / -; s1: eosinophil@7 / -; s2: erythroblast@7,immunoglobulin@7 / - |
+| rb_conc_signflip_ora_p3_budget | 3 | 17 | 10 | 85 | 1 | 91 | s0: neutrophil@17 / -; s1: eosinophil@12 / -; s2: erythroblast@11,immunoglobulin@36 / - |
+| rb_par_signflip_ora_p3_budget | 3 | 91 | 91 | 91 | 0 | 96 | s0: neutrophil@4 / -; s1: eosinophil@3 / -; s2: erythroblast@3,immunoglobulin@3 / - |
+| rb_seq_clean_ora_p3_budget | 3 | 98 | 97 | 97 | 100 | 99 | s0: - / -; s1: - / -; s2: - / - |
+| rb_conc_clean_ora_p3_budget | 3 | 110 | 107 | 107 | 109 | 109 | s0: - / -; s1: - / -; s2: - / - |
+| rb_par_clean_ora_p3_budget | 3 | 115 | 115 | 115 | 103 | 103 | s0: - / -; s1: - / -; s2: - / - |

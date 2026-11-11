@@ -2,11 +2,11 @@
 pkill -f "runs/variants/_queue[.]sh"                                     # 1. queue manager first
 pkill -f "tools/(run_variant|calibrate_checkpoints|run_baseline)[.]py"   # 2. runner
 pkill -f "cofy[.]simulate"                                            # 3. training in progress
-sleep 5; pkill -f "envs/dafyolo/bin/python -s -c from multiprocessing"   # 4. leftover workers
+sleep 5; pkill -f "envs/cofy/bin/python -s -c from multiprocessing"   # 4. leftover workers
 nvidia-smi                                                               # GPU back to ~9 MiB
 
 # Restart processes
-cd ~/DAFYOLO/cofy_system && conda activate dafyolo
+cd ~/COFY/cofy_system && conda activate cofy
 pgrep -fl "_queue[.]sh|tools/(run_variant|calibrate_checkpoints|run_baseline)[.]py|cofy[.]simulate"   # must print nothing
 python tools/launch_detached.py runs/variants/_queue.log -- /bin/bash runs/variants/_queue.sh
 tail -f runs/variants/_queue.log
@@ -14,7 +14,7 @@ tail -f runs/variants/_queue.log
 setsid nohup nvidia-smi --query-gpu=timestamp,power.draw,utilization.gpu,memory.used --format=csv,noheader,nounits -l 10 >> runs/variants/_power.csv 2>/dev/null &
 
 # See status
-cd ~/DAFYOLO/cofy_system && conda activate dafyolo
+cd ~/COFY/cofy_system && conda activate cofy
 python tools/queue_status.py --watch
 
 COFY demo: one-command federation over the network, licence, online launchers
@@ -51,4 +51,4 @@ classic-head architecture and requirements.
 
 LICENSE: GNU AGPL-3.0, the licence of the Ultralytics library the code
 
-builds on. README: COFY (Class-Owned Federated YOLO), formerly DAFYOLO.
+builds on. README: COFY (Class-Owned Federated YOLO).

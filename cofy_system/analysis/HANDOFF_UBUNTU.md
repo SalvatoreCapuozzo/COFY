@@ -143,7 +143,7 @@ ultralytics downloads it on first use (needs internet).
 ### Step 1 — Environment
 
 ```bash
-conda create -n dafyolo python=3.10 -y && conda activate dafyolo
+conda create -n cofy python=3.10 -y && conda activate cofy
 # install torch + torchvision with CUDA per pytorch.org, e.g. pip install torch torchvision --index-url <cuda index>
 pip install ultralytics==8.4.84
 pip install -r requirements.txt      # must not upgrade ultralytics; re-pin afterwards if it does
@@ -319,7 +319,7 @@ committed. `runs/` is gitignored; do not try to commit checkpoints.
 
 If the hypothesis is **not supported**, the user's plan is to try variants of
 the merge step (sync and async) and the improvements in
-`dafyolo_improvement_proposals.html` (repo root). Do not start them on your
+`legacy/reports/early_improvement_proposals.html`. Do not start them on your
 own. When asked:
 
 - The first candidate is **FedNova step normalization** (`normalize_steps:
@@ -332,7 +332,7 @@ own. When asked:
   folder, never edits to `configs/study/` or `runs/study/`. Run them with the
   same datasets, seeds and test, so they are comparable.
 - **User rule:** once an improvement from the proposals file has been
-  implemented and tested, remove it from `dafyolo_improvement_proposals.html`,
+  implemented and tested, remove it from `legacy/reports/early_improvement_proposals.html`,
   and report its measured result.
 
 ## 8. Reference

@@ -333,6 +333,12 @@ class FedServer:
                         n: (c[n] if c else 0) + sum(d[n] for d in deltas) / len(deltas) for n in deltas[0]}
 
                 previous_round_sd = {k: v.clone() for k, v in self.global_state_dict.items()}
+                excluded = self._peer.excluded if self._peer is not None else {}
+                if excluded:   # P3b: the uploads of excluded nodes are discarded on arrival
+                    results = [r for r in results if r.name not in excluded]
+                    log.info(f"  discarded the uploads of {sorted(excluded)} (excluded by the peer check)")
+                    if not results:
+                        raise RuntimeError("peer check excluded every node")
                 if self._robust.active:   # attacker's upload, then ownership + norm bounds (cofy/robust.py)
                     results = [self._robust.process(r, previous_round_sd) for r in results]
                 log.info("🧠 Aggregating node weights...")
@@ -364,6 +370,8 @@ class FedServer:
                     self.global_state_dict.update(self._robust.trimmed_shared(results, previous_round_sd, shared))
                 if self.cfg.federation.server_lr != 1.0:
                     self._server_step(previous_round_sd)
+                if excluded:   # P3b: their classes keep the previous rows (no other node may supply them)
+                    self._peer.keep_excluded_rows(self.global_state_dict, previous_round_sd)
                 if self._peer is not None:   # P3: quarantine, peer check, rollback (also in the stored versions)
                     self._peer.after_merge(self.global_state_dict, self._swa, round_idx + 1)
                 if self.cfg.federation.swa_last > 0:
@@ -573,26 +581,29 @@ class AsyncFedServer:
         """Immediately aggregate one node's update into the global model."""
         with self._lock:
             staleness = self._version - pulled_version
-            if self._robust.active:   # attacker's upload, then ownership + norm bounds (cofy/robust.py)
+            # P3b: an excluded node's upload is discarded on arrival -- no merge, no new version (a version
+            # that changed nothing would only make the honest nodes' updates look staler)
+            discard = self._peer is not None and result.name in self._peer.excluded
+            if self._robust.active and not discard:   # attacker's upload, then ownership + norm bounds (cofy/robust.py)
                 result = self._robust.process(result, pulled_sd, async_push=True)
             if self._ca2fl is not None:
                 counts = [result.class_counts.get(c, 0) for c in range(self.cfg.nc)]
-                if self._ca2fl.push(self._global_sd, result.name, result.state_dict, pulled_sd,
-                                    pulled_version, counts, result.num_images):
+                if not discard and self._ca2fl.push(self._global_sd, result.name, result.state_dict, pulled_sd,
+                                                    pulled_version, counts, result.num_images):
                     self._version += 1
                 if self._submission_count + 1 == self._total_submissions and self._ca2fl.buffer:
                     self._ca2fl.step(self._global_sd)   # last arrival: flush a partial buffer
                     self._version += 1
-            else:
+            elif not discard:
                 self._aggregate_async(result, pulled_sd, staleness)
                 self._version += 1
-            if self._peer is not None:   # P3: quarantine, peer check, rollback (also in the stored versions)
+            if self._peer is not None and not discard:   # P3: quarantine, peer check, rollback (also in the stored versions)
                 self._peer.after_merge(self._global_sd, list(self._last_by_node.values()) + list(self._swa),
                                        self._version)
             self._submission_count += 1
             if self.cfg.federation.swa_per_node:
                 self._last_by_node[result.name] = {k: v.detach().cpu().clone() for k, v in self._global_sd.items()}
-            elif self.cfg.federation.swa_last > 0:
+            elif self.cfg.federation.swa_last > 0 and not discard:
                 self._swa.append({k: v.detach().cpu().clone() for k, v in self._global_sd.items()})
                 self._swa = self._swa[-self.cfg.federation.swa_last:]
             sub = self._submission_count
@@ -602,6 +613,7 @@ class AsyncFedServer:
                 f"[async] sub {sub:3d}/{self._total_submissions} | "
                 f"node={result.name:10s} | staleness={staleness:2d} | "
                 f"owns={owned_names} | global_v={self._version}"
+                + (" | discarded (excluded by the peer check)" if discard else "")
             )
 
             # Per-submission checkpoint. Only the latest is kept on disk --
@@ -625,7 +637,7 @@ class AsyncFedServer:
                 },
                 ckpt_path,
             )
-            if self._last_ckpt_path is not None:
+            if self._last_ckpt_path is not None and self._last_ckpt_path != ckpt_path:   # same path: a discarded push
                 self._last_ckpt_path.unlink(missing_ok=True)
             self._last_ckpt_path = ckpt_path
 

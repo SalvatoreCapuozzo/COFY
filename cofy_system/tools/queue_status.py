@@ -215,11 +215,12 @@ def describe(name, mode):
         text = FOLLOWUP_WHAT.get(mode) or (
                "centralized reference" if mode.startswith("baseline") else "training-length pilot" if mode == "budget"
                 else "post-hoc calibration" if posthoc(mode) else f"federated {mode} training (exploratory variant)")
-    m = re.match(r"rb_(seq|conc|par)_([a-z]+)(_ora)?(_noenf)?(_p3|_p4)?(_budget)?$", name)
+    m = re.match(r"rb_(seq|conc|par)_([a-z]+)(_ora)?(_noenf)?(_p3x|_p3|_p4)?(_budget)?$", name)
     if m:
         text += (f", {dict(seq='sequential sync', conc='concurrent async', par='parallel FedAvg')[m[1]]}, "
                  f"attack '{m[2]}', defence {'ON' if m[3] else 'off'}" + (", ownership not enforced" if m[4] else "")
                  + {"_p3": " + candidate P3 (peer validation, per-class rollback)",
+                    "_p3x": " + candidate P3b (peer validation, rollback and exclusion of the flagged node)",
                     "_p4": " + candidate P4 (consecutive merges bounded jointly)"}.get(m[5] or "", "")
                  + (", final model kept" if m[6] else ""))
     return text

@@ -5,7 +5,7 @@ exercised with four clients on one machine (article, *Limitations*: "a multi-sit
 measured"). These experiments run the same federations on **three machines on one Wi-Fi network**, with
 real network transfers and real arrival times, and compare them with the simulated runs of the same seeds.
 
-Installation, data and the server/client basics: [README.md](README.md). Full network guide:
+Setting up the client machines, step by step: [CLIENT_SETUP.md](CLIENT_SETUP.md). Installation, data and the server/client basics: [README.md](README.md). Full network guide:
 [`cofy_system/docs/NETWORK_FEDERATION.md`](cofy_system/docs/NETWORK_FEDERATION.md).
 
 - [1. What is measured](#1-what-is-measured)

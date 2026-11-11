@@ -172,3 +172,33 @@ sent its last uploads in a row), and that seed's last global version collapsed a
 bounded update of the statistics suffices when no honest update follows. Last version over seeds: 69 % of
 centralized, against 70 % without P4; clean runs: 115 % against 109 % (no cost). The calibration (P1) is
 what undoes this attack.
+
+**P3 result (2026-11-11, WBC seeds 0-2, `DEFENCE_RESULTS.md`):** detection is exact. The attacker's classes
+were rolled back in all nine sign-flip runs (checks 3-17; node C's second class at check 36 in one
+FedAsync seed) and no honest class in the nine clean runs, although the named node lied in every report;
+no cost on clean runs (98/110/115 % against 100/109/103 %). Repair depends on the scheme: FedAvg 91 % of
+centralized (0 % without P3; other classes mAP50 0.59-0.64, as clean), CWT 31 % and FedAsync 17 % (0 % and
+1 %). In CWT and FedAsync the frozen rows fire again (3-29 % of the locations at the end) because the
+attacker's reversed shared updates are still merged, bounded only in size; FedAvg's trimmed mean discards
+them. Next step: on quarantine, also discard the flagged node's shared and BatchNorm updates.
+
+One correction to the P3 description: the lie as run (the attacker reports every class it does not own at
+coverage 1.0) never casts a vote, because such a report fails the ratio rule (the class is not 10x the median
+of the others, which are all 1.0). The clean twins therefore test the ratio rule, not the majority. A lie aimed
+at one class is one vote of the three non-owners and cannot reach a majority alone; `tools/check_rules.py`
+now tests that case with scripted reports.
+
+**P3b, rollback and exclusion (`peer_exclude`, implemented 2026-11-11).** On a rollback, the owner of the
+rolled-back class is excluded from then on:
+- asynchronous schemes (CWT, FedAsync): the server discards its upload on arrival, with no merge and no new
+  version (a version that changed nothing would make the honest nodes' updates look staler and down-weight
+  them); its slot in the per-node average keeps the current global model;
+- parallel sync (FedAvg): it is left out of the round (trimmed mean over the three others = their median), and
+  its classes keep the rows of the previous version, since the merge would otherwise fill them from another
+  node (R3);
+- its coverage reports no longer count in the vote.
+Rows still only ever hold values their owner produced (R3); the server holds no data (R2). Checked by
+`tools/check_rules.py` (8 new checks through the real asynchronous `push()` and the sync merge steps; the
+vote check was mutation-tested). Runs: `rb_{seq,conc,par}_signflip_ora_p3x_budget`, WBC seeds 0-2, compared
+with P3 in `tools/defence_eval.py --report`. Clean twins are not re-run: without a rollback there is no
+exclusion, and P3 rolled back nothing in its nine clean runs.

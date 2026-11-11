@@ -82,6 +82,8 @@ class RobustConfig:
     peer_patience: int = 2          # P3: consecutive flagged checks before the rollback
     peer_every: int = 1             # P3: check every k-th global version
     peer_lie: bool = True           # P3: the attacker reports every class it does not own as covering everything
+    peer_exclude: bool = False      # P3b: on a rollback, the server also discards every later upload of the
+                                    #   rolled-back class's owner (shared weights, BatchNorm, rows) and its votes
 
 
 @dataclass

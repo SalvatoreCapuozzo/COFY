@@ -25,6 +25,13 @@ covers every location); the majority among the non-owners stops it from rolling 
 The node named as attacker lies also in runs with attack "none", so that the clean twins test the vote.
 Every check is appended to <output_dir>/peer_log.jsonl.
 
+P3b (`peer_exclude`): the rollback alone leaves the owner's updates to the shared layers and BatchNorm
+statistics in the merge, and in CWT and FedAsync those reversed updates make the frozen rows fire again.
+With exclusion, the owner of a rolled-back class is excluded from then on: the server discards its uploads
+on arrival (no new version in the asynchronous schemes; left out of the round in parallel sync, its rows kept
+at the previous version), and its reports no longer count in the vote. Its rows still only ever hold values
+it produced (R3); nothing it sends after the exclusion reaches the model.
+
 Why coverage and not the share of images with a detection: in a pilot on the kept final models of the
 robustness study (WBC, before any P3 run), four of the seven classes were detected on 80-100 % of the
 images of nodes that do not own them in clean models too, because those cells do appear there, without
@@ -108,6 +115,7 @@ class PeerCheck:
         self.accepted = {c: self._rows(init_sd, c) for c in range(self.nc)}
         self.strikes = {c: 0 for c in range(self.nc)}
         self.quarantined: dict[int, int] = {}      # class -> version at which it was rolled back
+        self.excluded: dict[str, int] = {}         # P3b: node -> version from which its uploads are discarded
         self.n_versions = 0
         self.model = None
         self.log_path = Path(out_dir) / "peer_log.jsonl"
@@ -121,6 +129,13 @@ class PeerCheck:
             t[c] = v.to(device=t.device, dtype=t.dtype)
             sd[k] = t
 
+    def keep_excluded_rows(self, sd: dict, prev: dict) -> None:
+        """Parallel sync, P3b: the classes of excluded nodes keep their rows of the previous version
+        (the merge left those nodes out, so no other node may supply the rows)."""
+        for nm in self.excluded:
+            for c in self.registry[nm]:
+                self._set_rows(sd, c, self._rows(prev, c))
+
     def _rates(self, sd):
         from .model import build_model
         dev = torch.device(self.cfg.federation.device)   # resolved at load: cuda, mps or cpu
@@ -131,7 +146,7 @@ class PeerCheck:
         self.model.eval().to(dev)
         try:
             return {nm: class_coverage(self.model, imgs, self.nc, self.rc.peer_conf, dev)
-                    for nm, imgs in self.images.items()}
+                    for nm, imgs in self.images.items() if nm not in self.excluded}
         finally:
             self.model.to("cpu")          # the GPU is the training's between checks
             if dev.type == "cuda":
@@ -150,8 +165,8 @@ class PeerCheck:
         self.n_versions += 1
         if self.n_versions % max(1, self.rc.peer_every):
             return sd
-        reported = self._rates(sd)
-        if self.attacker and self.rc.peer_lie:   # the attacker reports every class it does not own as covering everything
+        reported = {nm: r for nm, r in self._rates(sd).items() if nm not in self.excluded}   # P3b: no vote
+        if self.attacker and self.rc.peer_lie and self.attacker in reported:   # the attacker reports every class it does not own as covering everything
             reported[self.attacker] = [1.0 if c not in self.registry[self.attacker] else r
                                        for c, r in enumerate(reported[self.attacker])]
         flagged, rolled = [], []
@@ -166,6 +181,8 @@ class PeerCheck:
                 if self.strikes[c] >= self.rc.peer_patience:
                     self.quarantined[c] = version
                     rolled.append(c)
+                    if self.rc.peer_exclude and c in self.owner:
+                        self.excluded.setdefault(self.owner[c], version)
                     self._set_rows(sd, c, self.accepted[c])
                     for st in stored:
                         self._set_rows(st, c, self.accepted[c])
@@ -175,5 +192,5 @@ class PeerCheck:
         with open(self.log_path, "a") as f:
             f.write(json.dumps({"version": version, "coverage": {nm: [round(r, 5) for r in v] for nm, v in reported.items()},
                                 "flagged": flagged, "rolled_back": rolled,
-                                "quarantined": sorted(self.quarantined)}) + "\n")
+                                "quarantined": sorted(self.quarantined), "excluded": sorted(self.excluded)}) + "\n")
         return sd

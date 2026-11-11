@@ -411,6 +411,8 @@ P4_RUNS = [("rb_conc_bnpoison_ora_p4_budget", "rb_conc_bnpoison_ora_budget"),
            ("rb_conc_clean_ora_p4_budget", "rb_conc_clean_ora")]
 P3_RUNS = [(f"rb_{sc}_{a}_ora_p3_budget", f"rb_{sc}_{a}_ora_budget" if a == "signflip" else f"rb_{sc}_clean_ora")
            for a in ("signflip", "clean") for sc in ("seq", "conc", "par")]
+# P3b (peer_exclude) is compared with P3 itself: the same check and rollback, without the exclusion
+P3_RUNS += [(f"rb_{sc}_signflip_ora_p3x_budget", f"rb_{sc}_signflip_ora_p3_budget") for sc in ("seq", "conc", "par")]
 
 
 def _scores(name, ds, s):
@@ -451,7 +453,8 @@ def _report_p3_p4(ds, fmt, mean):
     out += ["", "## P3: peer validation with per-class rollback", "",
             "mAP50 as Fed:Cent (%), mean over seeds (columns as for P4). Rolled back: classes quarantined, with the "
             "version, per seed; attacker's = the attacker's own classes (wanted), other = honest classes (false alarms; "
-            "the node named as attacker also lies in its reports in the clean twins).", "",
+            "the node named as attacker also lies in its reports in the clean twins). Rows *_p3x_*: P3b, the owner "
+            "of a rolled-back class is also excluded; their 'without' columns are P3 without the exclusion.", "",
             "| run | n | last version | saved, standard | saved, per-class budget | without P3: last version | "
             "without P3: saved, per-class budget | rolled back: attacker's / other (versions) |",
             "|---|---|---|---|---|---|---|---|"]

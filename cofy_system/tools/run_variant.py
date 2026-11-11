@@ -76,7 +76,7 @@ def prune_study_checkpoints(name: str, run_dir: Path) -> float:
         return 0.0
     keep_final = (name.startswith("bl_") or "backdoor" in name or "clean" in name
                   or (name.endswith("_budget") and (run_dir.name == "s0" or "bnpoison" in name))
-                  or "_p3_" in name or "_p4_" in name)   # candidate defences P3/P4: every final model
+                  or "_p3_" in name or "_p3x_" in name or "_p4_" in name)   # candidate defences P3/P3b/P4: every final model
     freed = 0.0
     for f in run_dir.glob("*/global_*.pt"):
         if f.name == "global_final.pt" and keep_final:

@@ -21,3 +21,5 @@ cofy_system/data/
 legacy/data/
 # outputs of the multi-machine experiments (MULTI_MACHINE_EXPERIMENTS.md) are local too
 cofy_system/runs/
+# Ultralytics label caches embed absolute paths and are rebuilt on each machine
+*.cache

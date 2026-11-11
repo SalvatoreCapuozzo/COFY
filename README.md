@@ -56,6 +56,7 @@ cofy_system/                 the system and the study (run every command from he
   _frozen/confirm/           frozen code of the confirmatory study (never edit; hashed)
   data/, runs/               local data and outputs (not in git)
 MULTI_MACHINE_EXPERIMENTS.md the experiments to run on several machines, step by step
+CLIENT_SETUP.md              setting up the client machines that join this machine's server
 legacy/                      the earlier prototype, reports and its data (not used by COFY)
 ```
 
@@ -197,8 +198,9 @@ What the defences do (details and numbers: Section 5.4 of the article):
 - **Not stopped in training**: a backdoor in the attacker's own class succeeds on every triggered image;
   screening inputs at the nodes removed it in 15 of 18 runs, at a cost in false alarms (bottom row).
 - **Not stopped**: a node that reverses its updates collapses every scheme; a per-class detection budget
-  confines the damage to its own classes. Peer validation with per-class rollback (in progress) rolls the
-  attacker's class back, but the frozen class still fires as the shared layers move on.
+  confines the damage to its own classes. Peer validation by the other nodes finds that node's class in every
+  run, without false alarms, and rolling it back restores FedAvg (91 % of centralized); under CWT and
+  FedAsync the frozen class fires again, because the attacker's updates to the shared layers are still merged.
 
 ## Licence
 
