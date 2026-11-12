@@ -1,0 +1,20 @@
+{
+ "centralized": {
+  "map50-95": 0.40961434264923086,
+  "map50": 0.7074943925520931,
+  "per_class_map50": {
+   "strongili": 0.7955972001299171,
+   "fasciola": 0.9228157464799243,
+   "eimeria_intricata": 0.34241752612063253,
+   "calicophoron": 0.8757928607558186,
+   "nematodirus": 0.9728311337001375,
+   "dicrocoelium": 0.3495607748472882,
+   "metastrongili": 0.23704093337839083,
+   "strongyloides": 0.7153968469643115,
+   "moniezia_benedeni": 0.8857362209355318,
+   "ascaris": 0.905856039068768,
+   "ancylostoma": 0.5622492310580589,
+   "trichuris_trichiuria": 0.9246381971863387
+  }
+ }
+}

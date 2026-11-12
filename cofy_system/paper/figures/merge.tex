@@ -1,0 +1,96 @@
+% COFY merge and calibration, worked example (included by main.tex, Figure fig:merge).
+% WBC classes and node colours as in Figure fig:architecture. One entry of each part is shown: a real
+% part is a tensor (a class row: its weights and bias at every scale), and every entry follows the same rule.
+% The numbers are illustrative; the rules follow the code: FedAsync w = 1/(1 + 0.5 s) (cofy/server.py,
+% _aggregate_async); FedAvg rows from their single owner (cofy/model.py, aggregate_per_class); defence trimmed
+% mean with trim 1 (cofy/robust.py); BatchNorm pooling, Eq. (bnpool) (cofy/calibrate.py); batch counts =
+% ceil(images / 4) of the WBC training subsets (255, 235, 289, 289 images).
+\begin{tikzpicture}[x=0.97cm,y=1cm,font=\fontsize{7.5}{9}\selectfont,
+    blk/.style={draw=black!60,rounded corners=1.5pt,align=left,inner sep=3pt},
+    note/.style={blk,font=\fontsize{6.8}{8.3}\selectfont},
+    hd/.style={font=\fontsize{7}{8.2}\selectfont\bfseries,align=center},
+    tag/.style={text=white,font=\fontsize{6.5}{6.5}\selectfont\bfseries,inner sep=0pt},
+    title/.style={anchor=west,font=\fontsize{9}{11}\selectfont\bfseries},
+    arr/.style={-{Latex[length=1.6mm]},black!70,thick}]
+  \definecolor{nA}{RGB}{120,160,220}\definecolor{nB}{RGB}{240,170,90}
+  \definecolor{nC}{RGB}{120,190,120}\definecolor{nD}{RGB}{185,140,200}
+  \def\rh{0.40}
+  % ── (a) one upload under FedAsync ─────────────────────────────────────────────
+  \node[title] at (-0.1,0.8) {(a) Merging one upload: node C under FedAsync};
+  \foreach \x/\t in {3.55/{global\\model $v_7$},4.9/{node C's\\change $\Delta$},6.4/{taken by\\the server?},
+                     7.9/{applied\\$w\,\Delta$},9.05/{global\\model $v_8$}}
+    \node[hd] at (\x,0.25) {\t};
+  \foreach \lab/\col/\own/\g/\d/\ok/\ap/\n [count=\i from 0] in {
+      {shared weight}/black/{}/0.820/$+$0.060/{yes}/$+$0.030/0.850,
+      {BatchNorm mean}/black/{}/0.410/$-$0.040/{yes}/$-$0.020/0.390,
+      basophil/nD/D/0.310/$\approx$0/{no: owner D}/0/0.310,
+      eosinophil/nB/B/0.270/$\approx$0/{no: owner B}/0/0.270,
+      erythroblast/nC/C/0.120/$+$0.080/{yes: owner}/$+$0.040/0.160,
+      immunoglobulin/nC/C/0.220/$+$0.050/{yes: owner}/$+$0.025/0.245,
+      lymphocyte/nD/D/0.350/$\approx$0/{no: owner D}/0/0.350,
+      monocyte/nD/D/0.180/$\approx$0/{no: owner D}/0/0.180,
+      neutrophil/nA/A/0.290/$\approx$0/{no: owner A}/0/0.290} {
+    \pgfmathsetmacro{\y}{-0.25-\i*\rh}
+    \ifnum\i<2
+      \fill[black!7] (-0.05,\y+0.18) rectangle (9.65,\y-0.18);
+    \else
+      \fill[\col!14] (-0.05,\y+0.18) rectangle (9.65,\y-0.18);
+      \fill[\col] (-0.05,\y+0.18) rectangle (0.3,\y-0.18);
+      \node[tag] at (0.125,\y) {\own};
+    \fi
+    \node[anchor=west] at (0.38,\y) {\lab};
+    \node at (3.55,\y) {\g};
+    \node at (4.9,\y) {\d};
+    \node at (6.4,\y) {\ok};
+    \node at (7.9,\y) {\ap};
+    \node[font=\bfseries\fontsize{7.5}{9}\selectfont] at (9.05,\y) {\n};
+  }
+  \draw[black!35] (-0.05,-0.25-1.5*\rh) -- (9.65,-0.25-1.5*\rh);
+  \node[note,anchor=north west,text width=2.85cm] at (9.8,0.5)
+    {\textbf{Staleness.} Node C pulled $v_5$ and its change arrives at $v_7$: $s=2$, so
+     $w=1/(1+0.5\,s)=0.5$.\\[3pt]
+     \textbf{Grey parts} are taken from every node; \textbf{coloured rows} only from the class's owner (R3).\\[3pt]
+     Before the merge, the defence may scale each part down (Algorithm~\ref{alg:ora}).};
+  % ── (b) the same entries under the other schemes ──────────────────────────────
+  \node[title] at (-0.1,-4.1) {(b) The same entries under the other schemes};
+  \node[blk,anchor=north west,text width=5.75cm] at (-0.05,-4.4)
+    {\textbf{CWT.} Node C trains from the latest model, so $s=0$ and $w=1$: its change is applied in full.
+     Shared weight 0.880, BatchNorm mean 0.370, erythroblast 0.200, immunoglobulin 0.270; the other five rows
+     are unchanged. The next node in the turn order starts from this model.};
+  \node[blk,anchor=north west,text width=6.35cm] at (6.25,-4.4)
+    {\textbf{FedAvg.} All four nodes train from the shared weight 0.820 and reach A 0.860, B 0.800, C 0.880,
+     D 0.840, on 255, 235, 289 and 289 images: data-weighted mean 0.847. With the defence, trimmed mean of the
+     changes, the lowest and highest dropped: $0.820+0.030=0.850$. Each row takes its owner's value, with no
+     averaging.};
+  % ── (c) calibration ──────────────────────────────────────────────────────────
+  \node[title] at (-0.1,-7.55) {(c) Calibration, once, after the last update};
+  \node[hd,anchor=west] at (-0.05,-7.95) {Step 1: pool BatchNorm statistics};
+  \foreach \x/\t in {0.45/{node},1.75/{mean\\$\mu_i$},3.15/{variance\\$\sigma_i^2$},4.6/{batches\\$b_i$}}
+    \node[hd] at (\x,-8.45) {\t};
+  \foreach \nd/\col/\m/\v/\b [count=\i from 0] in {A/nA/0.20/1.00/64,B/nB/0.35/0.90/59,C/nC/0.50/1.20/73,D/nD/0.30/0.80/73} {
+    \pgfmathsetmacro{\y}{-8.95-\i*0.34}
+    \fill[\col!14] (-0.05,\y+0.16) rectangle (5.4,\y-0.16);
+    \fill[\col] (-0.05,\y+0.16) rectangle (0.3,\y-0.16);
+    \node[tag] at (0.125,\y) {\nd};
+    \node at (1.75,\y) {\m}; \node at (3.15,\y) {\v}; \node at (4.6,\y) {\b};
+  }
+  \node[blk,anchor=north west,text width=5.75cm] at (-0.05,-10.35)
+    {For one channel, the server pools them with Eq.~(\ref{eq:bnpool}), $\sum_i b_i=269$:\\[2pt]
+     \hspace*{1em}$\mu=0.341$\\
+     \hspace*{1em}$\sigma^2=0.978+0.012=0.990$\\[2pt]
+     the mean of the node variances plus the spread of the node means. The pooled values replace the
+     statistics of every BatchNorm channel.};
+  \node[hd,anchor=west] at (6.25,-7.95) {Step 2: owners re-fit their own rows};
+  \foreach \nd/\col/\rows [count=\i from 0] in {A/nA/{neutrophil},B/nB/{eosinophil},C/nC/{erythroblast, immunoglobulin},
+                                               D/nD/{basophil, lymphocyte, monocyte}} {
+    \pgfmathsetmacro{\y}{-8.45-\i*0.38}
+    \node[blk,draw=\col,very thick,fill=\col!12,minimum width=0.6cm,align=center,inner sep=2pt] (cn\nd) at (6.6,\y) {\nd};
+    \draw[arr] (cn\nd.east) -- ++(0.5,0) node[anchor=west,black] {rows of \rows};
+  }
+  \node[note,anchor=north west,text width=6.35cm] at (6.25,-10.0)
+    {With every other weight frozen and the pooled statistics in place, each owner trains its rows for one
+     epoch on its own images; the server writes each row back from its owner, with no averaging.\\[3pt]
+     \emph{Progressive form} (FedAsync): the pool grows as statistics arrive, nodes not yet heard from enter
+     with the final model's statistics and their batch counts, a model is released after every arrival, and
+     every owner re-fits its rows once more on the complete pool.};
+\end{tikzpicture}

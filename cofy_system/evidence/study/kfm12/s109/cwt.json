@@ -1,0 +1,74 @@
+{
+ "before": {
+  "map50": 0.7138566559955067,
+  "map50-95": 0.4097038147477013,
+  "per_class_map50": {
+   "strongili": 0.7753477776570279,
+   "fasciola": 0.9078711932237484,
+   "eimeria_intricata": 0.34217883444247776,
+   "calicophoron": 0.8914390656050468,
+   "nematodirus": 0.9781467311652937,
+   "dicrocoelium": 0.3281121296995355,
+   "metastrongili": 0.26033799072357783,
+   "strongyloides": 0.7640727735971897,
+   "moniezia_benedeni": 0.8678827637264086,
+   "ascaris": 0.9184211615712461,
+   "ancylostoma": 0.5702770297941436,
+   "trichuris_trichiuria": 0.9621924207403861
+  }
+ },
+ "bn": {
+  "map50": 0.7115263641080479,
+  "map50-95": 0.40875510883329214,
+  "per_class_map50": {
+   "strongili": 0.7703799995587197,
+   "fasciola": 0.9116220711872365,
+   "eimeria_intricata": 0.3038481998701777,
+   "calicophoron": 0.8928784005785134,
+   "nematodirus": 0.9763404992124296,
+   "dicrocoelium": 0.33166228079773863,
+   "metastrongili": 0.27937913111920964,
+   "strongyloides": 0.7493038799171027,
+   "moniezia_benedeni": 0.8714594178912911,
+   "ascaris": 0.9181998630925803,
+   "ancylostoma": 0.5683254760260068,
+   "trichuris_trichiuria": 0.9649171500455689
+  }
+ },
+ "head": {
+  "map50": 0.7229060078237283,
+  "map50-95": 0.41565591510238203,
+  "per_class_map50": {
+   "strongili": 0.738301632928177,
+   "fasciola": 0.9116580459974617,
+   "eimeria_intricata": 0.39712791948404935,
+   "calicophoron": 0.8993386926023421,
+   "nematodirus": 0.9766362814500532,
+   "dicrocoelium": 0.3271585981225059,
+   "metastrongili": 0.21008855409441146,
+   "strongyloides": 0.7976053413389474,
+   "moniezia_benedeni": 0.8621003182450726,
+   "ascaris": 0.918415779964668,
+   "ancylostoma": 0.6705865749874846,
+   "trichuris_trichiuria": 0.9658543546695645
+  }
+ },
+ "bn+head": {
+  "map50": 0.7190398732334269,
+  "map50-95": 0.41322364456767924,
+  "per_class_map50": {
+   "strongili": 0.718619838466297,
+   "fasciola": 0.9091934545474066,
+   "eimeria_intricata": 0.3465234773551162,
+   "calicophoron": 0.9007789886966563,
+   "nematodirus": 0.9761029070480666,
+   "dicrocoelium": 0.3368662324102349,
+   "metastrongili": 0.22921501869812766,
+   "strongyloides": 0.7902891421326704,
+   "moniezia_benedeni": 0.8641347055485734,
+   "ascaris": 0.9167257334068575,
+   "ancylostoma": 0.6720726123734254,
+   "trichuris_trichiuria": 0.9679563681176897
+  }
+ }
+}
