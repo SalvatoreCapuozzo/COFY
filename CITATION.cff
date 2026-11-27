@@ -1,0 +1,45 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "COFY: Class-Owned Federated YOLO"
+version: "1.0.0"
+date-released: "2026-11-27"
+license: AGPL-3.0-only
+repository-code: "https://github.com/SalvatoreCapuozzo/COFY"
+abstract: >-
+  COFY (Class-Owned Federated YOLO) is a federated object detector for sites that annotate different classes:
+  only the site that owns a class updates that class's output parameters, unlabelled classes are masked in the
+  loss and the server holds no data. It runs parallel (FedAvg), sequential (cyclic weight transfer) and
+  concurrent asynchronous (FedAsync) training with a barrier-free calibration, a secured client-server
+  implementation and ownership-aware robust aggregation. The release contains the code, the configurations,
+  the frozen code and evaluation protocol of the article's ten-seed study, its run-level records and a
+  one-machine demonstration.
+keywords:
+  - federated learning
+  - object detection
+  - medical imaging
+  - trustworthy AI
+  - YOLO
+authors:
+  - family-names: Capuozzo
+    given-names: Salvatore
+    orcid: "https://orcid.org/0000-0002-2578-9349"
+    affiliation: "Department of Industrial Engineering, University of Naples Federico II"
+  - family-names: Marrone
+    given-names: Stefano
+    orcid: "https://orcid.org/0000-0001-6852-0377"
+    affiliation: "Department of Electrical Engineering and Information Technologies, University of Naples Federico II"
+  - family-names: Sansone
+    given-names: Carlo
+    orcid: "https://orcid.org/0000-0002-8176-6950"
+    affiliation: "Department of Electrical Engineering and Information Technologies, University of Naples Federico II"
+references:
+  - type: dataset
+    title: "AI-KFM12"
+    authors:
+      - family-names: Capuozzo
+        given-names: Salvatore
+    publisher:
+      name: Mendeley Data
+    doi: "10.17632/w8gfxt6shb.1"
+    year: 2026

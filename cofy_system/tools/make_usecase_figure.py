@@ -68,7 +68,7 @@ def main():
     plt.rcParams.update({"font.family": "sans-serif", "font.sans-serif": ["Nimbus Sans", "Liberation Sans", "DejaVu Sans"],
                          "font.size": 8, "axes.linewidth": 0, "pdf.fonttype": 42,
                          "mathtext.fontset": "custom", "mathtext.rm": "Nimbus Sans", "mathtext.bf": "Nimbus Sans:bold"})
-    order = [("wbc", "WBC"), ("kfm12", "KFM12"), ("dentex", "DENTEX")]
+    order = [("wbc", "WBC"), ("kfm12", "AI-KFM12"), ("dentex", "DENTEX")]
     picks = {ds: pick(ds) for ds, _ in order}
     def window(ds):
         """The whole image, or for DENTEX the dental arch: the boxes' extent with a 4 % margin."""
@@ -93,8 +93,10 @@ def main():
             col, ls = NODE[owner[c]]
             ax.add_patch(Rectangle((x1, y1), x2 - x1, y2 - y1, fill=False, ec=col, lw=0.9 if ds == "dentex" else 1.2, ls=ls))
         n_cls, n_own = len({c for c, *_ in b}), len({owner[c] for c, *_ in b})
-        ax.set_title(f"$\\bf{{{name}}}$\n{len(b)} object{'s' if len(b) > 1 else ''}, {n_cls} class{'es' if n_cls > 1 else ''}, "
-                     f"{n_own} node{'s' if n_own > 1 else ''}", fontsize=8, color=INK, loc="left", pad=2, linespacing=1.2)
+        ax.set_title(f"{len(b)} object{'s' if len(b) > 1 else ''}, {n_cls} class{'es' if n_cls > 1 else ''}, "
+                     f"{n_own} node{'s' if n_own > 1 else ''}", fontsize=8, color=INK, loc="left", pad=2)
+        ax.annotate(name, xy=(0, 1), xycoords="axes fraction", xytext=(0, 12.5), textcoords="offset points",
+                    fontsize=8, fontweight="bold", color=INK, ha="left", va="bottom")   # bold name above
     handles = [Line2D([], [], color=col, lw=1.4, ls=ls, label=f"classes of {n.replace('_', ' ')}") for n, (col, ls) in NODE.items()]
     fig.legend(handles=handles, loc="lower center", ncol=4, frameon=False, fontsize=8, bbox_to_anchor=(0.5, -0.02),
                handlelength=2.2, columnspacing=1.0, handletextpad=0.4)

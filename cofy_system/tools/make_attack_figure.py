@@ -51,7 +51,7 @@ OUT = ROOT / "paper/figures/attacks.pdf"
 CACHE = OUT.with_name("attacks_cache.json")
 RED, BLUE, INK, MUTED = "#e34948", "#2a78d6", "#1f1f1e", "#6b6a64"   # attacker's classes / others (validated pair)
 CONF = 0.25
-DISPLAY = {"kfm12": "KFM12", "wbc": "WBC", "dentex": "DENTEX"}
+DISPLAY = {"kfm12": "AI-KFM12", "wbc": "WBC", "dentex": "DENTEX"}
 
 
 def letterbox(path, size):
@@ -413,7 +413,7 @@ def main():
         note(ax, "no detection")
     ax = axes[3, 4]; show(ax, ev_img, wwin, "(j) recalibrated"); dets(ax, d["recalibrated"], own_bn)
 
-    for row, lab in enumerate(("KFM12", "WBC", "DENTEX", "WBC models")):
+    for row, lab in enumerate(("AI-KFM12", "WBC", "DENTEX", "WBC models")):
         y = sum(axes[row, 0].get_position().bounds[1::2]) - axes[row, 0].get_position().height / 2
         fig.text(0.022, y, lab, rotation=90, ha="center", va="center", fontsize=8, color=MUTED)
     handles = [Line2D([], [], color=RED, lw=1.2, label="attacker's class(es)"),

@@ -3,9 +3,9 @@
 
 (a) Fed:Cent per use case and scheme on seeds 100-109: every seed, the mean and its two-sided 95 %
     t-interval (Eq. 2 of the article), with the 90 % and 95 % levels.
-(b) KFM12, per class: retention (federated / centralized AP50, means over the ten seeds) against the
+(b) AI-KFM12, per class: retention (federated / centralized AP50, means over the ten seeds) against the
     class's training boxes per seed, counted in the images each node trained on (evidence/study/*/subsets,
-    which use the file names of the public KFM12 release). The boxes are read from the release's labels
+    which use the file names of the public AI-KFM12 release). The boxes are read from the release's labels
     (--kfm12-release PATH), or, on the authors' machine, from data/study/ through data/kfm12_name_map.csv.
 
     python tools/make_results_figure.py [--kfm12-release PATH]
@@ -27,7 +27,7 @@ OUT = ROOT / "paper/figures/results.pdf"
 SEEDS = range(100, 110)
 T975 = {9: 2.262}
 SCHEMES = {"CWT": ("cwt.json", "bn+head", "#1f6f8b"), "FedAsync": ("fedasync.json", "acal_refresh", "#c8641c")}
-USE_CASES = [("kfm12", "KFM12"), ("wbc", "WBC"), ("dentex", "DENTEX")]
+USE_CASES = [("kfm12", "AI-KFM12"), ("wbc", "WBC"), ("dentex", "DENTEX")]
 
 
 def load(p):
@@ -120,7 +120,7 @@ def main():
     ax.set_xticks([90, 100, 120, 140, 160])
     ax.set_ylim(lo - 0.3, 0.55)
 
-    # (b) KFM12 per-class retention against training boxes
+    # (b) AI-KFM12 per-class retention against training boxes
     import sys
     release = sys.argv[sys.argv.index("--kfm12-release") + 1] if "--kfm12-release" in sys.argv else None
     boxes = train_boxes("kfm12", release)
