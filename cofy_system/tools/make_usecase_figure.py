@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Figure of the three use cases (paper/figures/usecases.pdf): one evaluation image of each, with every
+"""Figure of the three use cases (Figure 4, paper/figures/Fig4.pdf; README image docs/img/usecases.png): one evaluation image of each, with every
 labelled object coloured by the node that owns its class, so that the way classes share an image shows
 at a glance (never in WBC, sometimes in AI-KFM12, always in DENTEX).
 
@@ -19,7 +19,8 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "paper/figures/usecases.pdf"
+OUT = ROOT / "paper/figures/Fig4.pdf"
+PNG = ROOT / "docs/img/usecases.png"
 NODE = {"node_A": ("#1c5cab", "-"), "node_B": ("#eb6834", (0, (3, 1.5))),
         "node_C": ("#5cc98a", (0, (1, 1))), "node_D": ("#b25ad6", (0, (4, 1.2, 1, 1.2)))}
 INK, MUTED = "#1f1f1e", "#6b6a64"
@@ -102,7 +103,7 @@ def main():
                handlelength=2.2, columnspacing=1.0, handletextpad=0.4)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT, dpi=300)
-    fig.savefig(OUT.with_suffix(".png"), dpi=250)
+    fig.savefig(PNG, dpi=250)
     print({ds: picks[ds][0].name for ds, _ in order})
 
 

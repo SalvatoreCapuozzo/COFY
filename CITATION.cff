@@ -43,7 +43,7 @@ authors:
     affiliation: "Department of Electrical Engineering and Information Technologies, University of Naples Federico II"
 references:
   - type: dataset
-    title: "AI-KFM12"
+    title: "AI-KFM12 Dataset"
     authors:
       - family-names: Capuozzo
         given-names: Salvatore

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Figure of the robustness study's attacks (paper/figures/attacks.pdf): the data attacks on images of
+"""Figure of the robustness study's attacks (Figure 5, paper/figures/Fig5.pdf; README image docs/img/attacks.png): the data attacks on images of
 the three use cases, and what kept federated models of the robustness study (WBC) detect.
 
 Rows 1-3 (AI-KFM12, WBC, DENTEX), what the attacker changes or what the model is shown (attacker of seed 0:
@@ -47,7 +47,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 VAR = ROOT / "runs/variants"
-OUT = ROOT / "paper/figures/attacks.pdf"
+OUT = ROOT / "paper/figures/Fig5.pdf"
+PNG = ROOT / "docs/img/attacks.png"
 CACHE = OUT.with_name("attacks_cache.json")
 RED, BLUE, INK, MUTED = "#e34948", "#2a78d6", "#1f1f1e", "#6b6a64"   # attacker's classes / others (validated pair)
 CONF = 0.25
@@ -423,12 +424,12 @@ def main():
                handlelength=2.0, columnspacing=1.2, handletextpad=0.5)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT, dpi=300)
-    fig.savefig(OUT.with_suffix(".png"), dpi=250)
+    fig.savefig(PNG, dpi=250)
     shutil.rmtree(work, ignore_errors=True)
     meta = {"wbc": {k: wm[k] for k in ("a_img", "c_img", "eval", "bnpoison_attacker")},
             "kfm12": {k: str(Path(syn["kfm12"][k]).name) for k in ("a_img", "eval")},
             "dentex": {k: str(Path(syn["dentex"][k]).name) for k in ("a_img", "eval")}}
-    OUT.with_suffix(".json").write_text(json.dumps(meta, indent=1))
+    OUT.with_name("attacks.json").write_text(json.dumps(meta, indent=1))
     print(json.dumps(meta, indent=1))
 
 

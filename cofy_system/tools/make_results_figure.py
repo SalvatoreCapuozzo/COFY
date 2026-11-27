@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Figure of the main results (paper/figures/results.pdf), from the run records in evidence/study/.
+"""Figure of the main results (Figure 6, paper/figures/Fig6.pdf), from the run records in evidence/study/.
 
 (a) Fed:Cent per use case and scheme on seeds 100-109: every seed, the mean and its two-sided 95 %
     t-interval (Eq. 2 of the article), with the 90 % and 95 % levels.
@@ -23,7 +23,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 EV = ROOT / "evidence/study"
-OUT = ROOT / "paper/figures/results.pdf"
+OUT = ROOT / "paper/figures/Fig6.pdf"
 SEEDS = range(100, 110)
 T975 = {9: 2.262}
 SCHEMES = {"CWT": ("cwt.json", "bn+head", "#1f6f8b"), "FedAsync": ("fedasync.json", "acal_refresh", "#c8641c")}
@@ -145,7 +145,6 @@ def main():
     fig.tight_layout(w_pad=1.2)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT)
-    fig.savefig(OUT.with_suffix(".png"), dpi=200)
     print(f"wrote {OUT.relative_to(ROOT)}")
 
 
