@@ -1,7 +1,7 @@
 # Evaluation protocol of the study
 
 **Written:** 2026-11-12, after the runs. This document describes the evaluation reported in the article
-(KFM12, WBC and DENTEX, seeds 100–109) as it was carried out. It is not a pre-registration.
+(AI-KFM12, WBC and DENTEX, seeds 100–109) as it was carried out. It is not a pre-registration.
 
 **What was fixed before the first run**, and can be checked by hash:
 - the code, configurations and analysis script, frozen in `_frozen/confirm/` on 2026-10-28 at 10:54 CET,
@@ -24,15 +24,15 @@ Recipe for every arm: YOLO26-L with the classic head, 640 px, SGD (momentum 0.9,
 
 ## 2. Use cases and data
 
-- **KFM12** (12 classes), **WBC** (7) and **DENTEX** (32 teeth, quadrant-enumeration subset), each split once
+- **AI-KFM12** (12 classes), **WBC** (7) and **DENTEX** (32 teeth, quadrant-enumeration subset), each split once
   at image level, 80 % training and 20 % evaluation (`tools/split_dataset_into_nodes.py --split-mode global
   --n-nodes 4 --seed 0 --val-frac 0.2`).
 - Four nodes. Classes are assigned greedily so that labelled instances are balanced; every training image
   goes to each node owning a class in it, labelled only for that node's classes.
-- KFM12 and WBC train on a class-stratified tenth of each node's training images, drawn with the seed
+- AI-KFM12 and WBC train on a class-stratified tenth of each node's training images, drawn with the seed
   (`balanced_fraction: 0.1`); DENTEX trains on all its training images. Each run writes the list it used.
 - The evaluation set is fully labelled, deduplicated and never subsampled.
-- Budgets: 30 epochs (KFM12), 20 (WBC, DENTEX).
+- Budgets: 30 epochs (AI-KFM12), 20 (WBC, DENTEX).
 
 ## 3. Seeds
 

@@ -1,6 +1,6 @@
 # bl_ca2fl_dx: DENTEX column of the comparison with standard methods (paper Table 6), exploratory,
 # 2026-11-10. Built from confirm_v2async/dentex_s101.yaml with the federation settings that distinguish
-# bl_ca2fl from the COFY schemes on KFM12 and WBC.
+# bl_ca2fl from the COFY schemes on AI-KFM12 and WBC.
 global_classes:
 - tooth_11
 - tooth_12

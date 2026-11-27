@@ -194,7 +194,7 @@ def main():
                       "class (means over seeds, both calibrated). Rho: Spearman correlation of class retention with "
                       "the class's training boxes / its owner's last-update time; p from 20,000 permutations. "
                       "Train boxes: labelled instances in the images each node trained on, from the run's subset "
-                      "manifests (balanced_subsets/, KFM12 and WBC train on a class-stratified tenth), mean over "
+                      "manifests (balanced_subsets/, AI-KFM12 and WBC train on a class-stratified tenth), mean over "
                       "the seeds; DENTEX trains on every image.", "",
                       "## Summary", ""] + head + [""] + body)
     print(text)

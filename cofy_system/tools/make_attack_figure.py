@@ -2,7 +2,7 @@
 """Figure of the robustness study's attacks (paper/figures/attacks.pdf): the data attacks on images of
 the three use cases, and what kept federated models of the robustness study (WBC) detect.
 
-Rows 1-3 (KFM12, WBC, DENTEX), what the attacker changes or what the model is shown (attacker of seed 0:
+Rows 1-3 (AI-KFM12, WBC, DENTEX), what the attacker changes or what the model is shown (attacker of seed 0:
 node_A; its classes in red):
   (a) one of the attacker's training images with its own boxes;
   (b) the same image with the label corruption: half the boxes dropped (grey only), the others moved by
@@ -10,7 +10,7 @@ node_A; its classes in red):
   (c) a backdoor sample: a checkerboard trigger (8 % of the image's short side) pasted at a random place
       and labelled as the attacker's first class;
   (d) an evaluation image without that class; (e) the same image with the trigger.
-  WBC uses the study's own attack copies (data/attack/wbc, tools/make_attack_data.py); KFM12 and DENTEX,
+  WBC uses the study's own attack copies (data/attack/wbc, tools/make_attack_data.py); AI-KFM12 and DENTEX,
   on which the robustness study was not run, apply the same rules here, with this figure's own seed.
   Each panel is a square crop of side = the image's short side, around the attacker's objects (the whole
   image for WBC; the central part of a DENTEX panoramic radiograph).
@@ -25,9 +25,9 @@ Every image is chosen by a fixed rule (first match in sorted order), so the figu
   stays inside the image; (c) first poisoned image whose trigger does not overlap the cell; (d,e) first
   triggered evaluation image of class lymphocyte (owned by neither attacker) on which the most confident
   detection of the cell (IoU >= 0.5) is lymphocyte for the clean and for the recalibrated model, and the
-  backdoored model reports neutrophil on the trigger. KFM12 / DENTEX (a,b) first node_A training image
+  backdoored model reports neutrophil on the trigger. AI-KFM12 / DENTEX (a,b) first node_A training image
   with 2-6 of its boxes of which the corruption drops at least one and keeps at least one; (c) the same
-  image with the trigger; (d) first evaluation image without the attacker's first class (KFM12: with 2-4
+  image with the trigger; (d) first evaluation image without the attacker's first class (AI-KFM12: with 2-4
   objects, all in the central 60 % of the image).
 The images illustrate the mechanisms; how often each happens is in the paper's tables.
 Each object shows its most confident detection; "+k" counts the other classes detected on it at lower
@@ -206,7 +206,7 @@ def wbc_models():
 
 
 def synth(ds, work):
-    """KFM12 / DENTEX: the data attacks of tools/make_attack_data.py applied with this figure's seed."""
+    """AI-KFM12 / DENTEX: the data attacks of tools/make_attack_data.py applied with this figure's seed."""
     import yaml
     from PIL import Image
     from make_attack_data import paste_trigger
@@ -346,7 +346,7 @@ def main():
 
     titles = ["(a) training", "(b) corrupted", "(c) backdoor", "(d) evaluation", "(e) with trigger"]
     lw_small = 0.6
-    # ── rows 1 and 3: KFM12 and DENTEX (rules of make_attack_data.py applied here) ──
+    # ── rows 1 and 3: AI-KFM12 and DENTEX (rules of make_attack_data.py applied here) ──
     for row, ds in ((0, "kfm12"), (2, "dentex")):
         s = syn[ds]
         G, own = s["classes"], set(s["own"])

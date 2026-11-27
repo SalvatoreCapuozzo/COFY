@@ -4,6 +4,14 @@ type: software
 title: "COFY: Class-Owned Federated YOLO"
 version: "1.0.0"
 date-released: "2026-11-27"
+doi: "10.5281/zenodo.24595085"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.24595085"
+    description: "This version (v1.0.0), archived on Zenodo"
+  - type: doi
+    value: "10.5281/zenodo.24595084"
+    description: "All versions (concept DOI)"
 license: AGPL-3.0-only
 repository-code: "https://github.com/SalvatoreCapuozzo/COFY"
 abstract: >-

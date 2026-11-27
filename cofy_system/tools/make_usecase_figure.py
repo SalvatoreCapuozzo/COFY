@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Figure of the three use cases (paper/figures/usecases.pdf): one evaluation image of each, with every
 labelled object coloured by the node that owns its class, so that the way classes share an image shows
-at a glance (never in WBC, sometimes in KFM12, always in DENTEX).
+at a glance (never in WBC, sometimes in AI-KFM12, always in DENTEX).
 
 Images are chosen by a fixed rule (first match in sorted order of the fully labelled evaluation set):
   WBC     the first image;
-  KFM12   the first image with 3-8 objects from classes of at least two nodes, all in the central
+  AI-KFM12   the first image with 3-8 objects from classes of at least two nodes, all in the central
           80 % of the image;
   DENTEX  the first image.
 Node colours keep the hues of the paper's diagrams (A blue, B orange, C green, D purple); the palette

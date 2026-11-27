@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed-level results of the study (seeds 100-109; KFM12, WBC, DENTEX), the level each scheme reaches,
+"""Seed-level results of the study (seeds 100-109; AI-KFM12, WBC, DENTEX), the level each scheme reaches,
 and a sensitivity analysis of the lower bounds (analysis/EVALUATION_PROTOCOL.md).
 
 For each scheme and use case it reads the paired values that the frozen analysis script reads

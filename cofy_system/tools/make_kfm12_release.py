@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the public KFM12 release from the study pool (data/_pool/kfm12) and its split (data/study/kfm12).
+"""Build the public AI-KFM12 release from the study pool (data/_pool/kfm12) and its split (data/study/kfm12).
 
 What the release changes, and why:
   * file names are normalized to  <host>_<technique>_<YYYYMMDD>_<acquisition>_r<row>_c<col>.jpg

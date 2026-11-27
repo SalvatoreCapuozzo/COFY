@@ -89,7 +89,7 @@ rsync -a --progress ~/cofy_export/m3/ <user>@<M3-ip>:/home/<user>/cofy_data/
 ```
 
 `--dest` must be the folder the data will have on the client (on macOS: `/Users/<user>/cofy_data`).
-KFM12 is large (about 16 GB for M2, 3 GB for M3): copy it once, ahead of time, by cable or USB drive if
+AI-KFM12 is large (about 16 GB for M2, 3 GB for M3): copy it once, ahead of time, by cable or USB drive if
 the Wi-Fi is slow (the export folder can be copied as it is).
 
 ## 4. Run a federation

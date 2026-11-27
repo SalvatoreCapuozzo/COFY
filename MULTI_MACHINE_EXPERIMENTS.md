@@ -79,9 +79,9 @@ rsync -a --progress ~/cofy_export/m3/ <user>@<M3-ip>:/home/<user>/cofy_data/
 |---|---|---|---|
 | WBC | `data/study/wbc/node_A/data.yaml` | `~/cofy_data/wbc/node_B`, `node_C` (0.1 GB each) | `~/cofy_data/wbc/node_D` (0.1 GB) |
 | DENTEX | `data/study/dentex/node_A/data.yaml` | `~/cofy_data/dentex/node_B`, `node_C` (0.5 GB each) | `~/cofy_data/dentex/node_D` (0.5 GB) |
-| KFM12 | `data/study/kfm12/node_A/data.yaml` | `~/cofy_data/kfm12/node_B` (10.7 GB), `node_C` (5.8 GB) | `~/cofy_data/kfm12/node_D` (3.0 GB) |
+| AI-KFM12 | `data/study/kfm12/node_A/data.yaml` | `~/cofy_data/kfm12/node_B` (10.7 GB), `node_C` (5.8 GB) | `~/cofy_data/kfm12/node_D` (3.0 GB) |
 
-KFM12 is large: copy it once, ahead of time, by cable or USB drive if the Wi-Fi is slow (the export folder
+AI-KFM12 is large: copy it once, ahead of time, by cable or USB drive if the Wi-Fi is slow (the export folder
 can be copied as it is). The client checks at join that each `data.yaml` lists exactly the node's classes.
 
 Room configs: generated once on M1 with `python tools/make_net_configs.py` (already in `configs/net/`):
@@ -91,7 +91,7 @@ the network (`final_calibration: true`) and its own output folder `runs/net/<exp
 ## 4. The experiments
 
 Run them one at a time, in this order (durations are rough: one simulated run of the study took about
-26 min on WBC, 40 min on DENTEX and 45 min on KFM12 on one GPU; transfers over Wi-Fi come on top).
+26 min on WBC, 40 min on DENTEX and 45 min on AI-KFM12 on one GPU; transfers over Wi-Fi come on top).
 
 | Id | Use case | Scheme | Room config (`configs/net/`) | Room id | Approx. time |
 |---|---|---|---|---|---|
@@ -101,8 +101,8 @@ Run them one at a time, in this order (durations are rough: one simulated run of
 | E3 | WBC | FedAvg (wall-clock reference; development seed 0) | `wbc_fedavg_s0.yaml` | `wbc-fedavg-s0` | 15–25 min |
 | E4 | DENTEX | CWT | `dentex_cwt_s100.yaml` | `dentex-cwt-s100` | 45–60 min |
 | E5 | DENTEX | FedAsync | `dentex_fedasync_s100.yaml` | `dentex-fedasync-s100` | 20–30 min |
-| E6 | KFM12 | CWT | `kfm12_cwt_s100.yaml` | `kfm12-cwt-s100` | 55–70 min |
-| E7 | KFM12 | FedAsync | `kfm12_fedasync_s100.yaml` | `kfm12-fedasync-s100` | 25–35 min |
+| E6 | AI-KFM12 | CWT | `kfm12_cwt_s100.yaml` | `kfm12-cwt-s100` | 55–70 min |
+| E7 | AI-KFM12 | FedAsync | `kfm12_fedasync_s100.yaml` | `kfm12-fedasync-s100` | 25–35 min |
 | E8 | all | E1, E2, E4–E7 on seeds 101 and 102 | `<use case>_<scheme>_s101.yaml`, `..._s102.yaml` | `<use case>-<scheme>-s101`, ... | as above |
 
 Each experiment uses the same four nodes on the same machines (node A on M1, B and C on M2, D on M3).

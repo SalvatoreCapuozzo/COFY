@@ -8,7 +8,7 @@ Per use case and seed (100-109):
   fedasync.json      the same for FedAsync (registered stage: acal_refresh)
   *_summary.json     each run's own summary (last global version, before calibration)
   fedasync_schedule.json   FedAsync's timeline on the virtual clock (machine speeds, every update)
-  subsets/node_X.txt the images each node trained on (file names), KFM12 and WBC only:
+  subsets/node_X.txt the images each node trained on (file names), AI-KFM12 and WBC only:
                      DENTEX trains on every training image
 
     python tools/export_evidence.py
@@ -26,7 +26,7 @@ CALIB = {"centralized.json": "calib/v2_centralized/{ds}/s{s}/centralized.json",
          "cwt.json": "calib/confirm_v2sync/{ds}/s{s}/async.json",
          "fedasync.json": "calib/confirm_v2async/{ds}/s{s}/async.json"}
 RUNS = {"centralized": "v2_central", "cwt": "confirm_v2sync", "fedasync": "confirm_v2async"}
-# KFM12 image lists use the file names of the public dataset release. The map from the original names
+# AI-KFM12 image lists use the file names of the public dataset release. The map from the original names
 # (which carry internal sample codes and notes) is private and local: tools/make_kfm12_release.py writes it.
 KFM12_MAP = ROOT / "data/kfm12_name_map.csv"
 
@@ -74,12 +74,13 @@ def main():
     (OUT / "README.md").write_text(
         "# Study runs: run-level records\n\n"
         "Written by `tools/export_evidence.py` from `runs/variants/` (not tracked: it holds checkpoints).\n"
-        "Use cases KFM12, WBC and DENTEX, seeds 100-109. Per seed: the calibration stages of the centralized\n"
+        "Use cases AI-KFM12, WBC and DENTEX, seeds 100-109. Per seed: the calibration stages of the centralized\n"
         "reference and of both schemes (`centralized.json`, `cwt.json`, `fedasync.json`; stages used in the article:\n"
         "`bn+head` for the centralized reference and CWT, `acal_refresh` for FedAsync), each run's summary,\n"
-        "FedAsync's virtual-clock timeline, and the images each node trained on (`subsets/`, KFM12 and WBC;\n"
-        "DENTEX trains on every training image). The same subset is used by every arm of a seed. KFM12 images\n"
-        "are listed under the file names of the public KFM12 release (Mendeley Data).\n\n"
+        "FedAsync's virtual-clock timeline, and the images each node trained on (`subsets/`, AI-KFM12 and WBC;\n"
+        "DENTEX trains on every training image). The same subset is used by every arm of a seed. AI-KFM12 images\n"
+        "are listed under the file names of the public AI-KFM12 release (Mendeley Data,\n"
+        "doi:10.17632/w8gfxt6shb.1).\n\n"
         "Protocol: `analysis/EVALUATION_PROTOCOL.md`. Intervals: `_frozen/confirm/tools/confirm_analysis.py`\n"
         "(frozen before the first run); levels, seed-level table and sensitivity of the lower bounds:\n"
         "`analysis/STUDY_SENSITIVITY.md`, `analysis/study_seed_level.csv` (`tools/study_sensitivity.py`).\n"

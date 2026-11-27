@@ -36,7 +36,7 @@ BatchNorm statistics and class rows (7). The server holds no data. The three way
 ![FedAvg, CWT and FedAsync on four nodes of different speeds](cofy_system/docs/img/schemes.png)
 
 The three use cases cover the ways classes can share an image: never (WBC, one cell per image), sometimes
-(KFM12, a few parasite eggs) and always (DENTEX, every tooth is a class); every object is coloured by the
+(AI-KFM12, a few parasite eggs) and always (DENTEX, every tooth is a class); every object is coloured by the
 node that owns its class:
 
 ![One image of each use case, objects coloured by their owner node](cofy_system/docs/img/usecases.png)
@@ -89,9 +89,14 @@ Data is not in git. Each use case is split once into four nodes and a fully labe
 
 | Use case | Images and labels | Licence | Node folders (real files) |
 |---|---|---|---|
-| KFM12 | the authors' Kubic FLOTAC Microscope dataset of parasite eggs (12 classes; release in preparation; a two-class subset is public, doi:10.17632/6bjcxw8dx2.1) | the authors' | 3.0–10.7 GB each, eval 4.5 GB |
+| AI-KFM12 | the authors' Kubic FLOTAC Microscope dataset of parasite eggs, 12 classes (Mendeley Data, doi:10.17632/w8gfxt6shb.1) | CC BY 4.0 | 3.0–10.7 GB each, eval 4.5 GB |
 | WBC | PBC peripheral blood cell images (doi:10.1016/j.dib.2020.105474) with the bounding boxes of github.com/medmabcf/White-Blood-Cell-Detection-Dataset | CC BY 4.0 | 0.1 GB each |
 | DENTEX | tooth-enumeration subset of DENTEX (huggingface.co/datasets/ibrahimhamamci/DENTEX), converted by `tools/convert_dentex.py` | CC BY-NC-SA 4.0 | 0.5 GB each (every node holds all 508 images) |
+
+The public AI-KFM12 release carries the study's split in its `splits/` folder (evaluation set, every node's
+training pool, class ownership), with normalized file names and the images stored as JPEG instead of the
+original PNG, so runs on it are close to the study's but not bit-identical; the images each run trained on
+are listed under the released names in `cofy_system/evidence/study/kfm12/`.
 
 **On the machine that prepared the study** (`data/study/` exists), check it is unchanged:
 
@@ -99,7 +104,7 @@ Data is not in git. Each use case is split once into four nodes and a fully labe
 PYTHONPATH=. python tools/study_manifest.py verify analysis/study_manifest.json   # ALL DATA VERIFIED
 ```
 
-**On another machine**, either rebuild KFM12 and WBC from their label pools (`data/_pool/`, a few MB,
+**On another machine**, either rebuild AI-KFM12 and WBC from their label pools (`data/_pool/`, a few MB,
 copied from the preparing machine) and the raw images, with the same verification at the end:
 
 ```bash

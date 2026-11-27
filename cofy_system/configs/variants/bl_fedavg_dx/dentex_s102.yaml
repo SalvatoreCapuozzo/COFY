@@ -1,6 +1,6 @@
 # bl_fedavg_dx: DENTEX column of the comparison with standard methods (paper Table 6), exploratory,
 # 2026-11-10. Built from confirm_v2sync/dentex_s102.yaml with the federation settings that distinguish
-# v2_sync from the COFY schemes on KFM12 and WBC.
+# v2_sync from the COFY schemes on AI-KFM12 and WBC.
 global_classes:
 - tooth_11
 - tooth_12

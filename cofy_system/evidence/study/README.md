@@ -1,12 +1,13 @@
 # Study runs: run-level records
 
 Written by `tools/export_evidence.py` from `runs/variants/` (not tracked: it holds checkpoints).
-Use cases KFM12, WBC and DENTEX, seeds 100-109. Per seed: the calibration stages of the centralized
+Use cases AI-KFM12, WBC and DENTEX, seeds 100-109. Per seed: the calibration stages of the centralized
 reference and of both schemes (`centralized.json`, `cwt.json`, `fedasync.json`; stages used in the article:
 `bn+head` for the centralized reference and CWT, `acal_refresh` for FedAsync), each run's summary,
-FedAsync's virtual-clock timeline, and the images each node trained on (`subsets/`, KFM12 and WBC;
-DENTEX trains on every training image). The same subset is used by every arm of a seed. KFM12 images
-are listed under the file names of the public KFM12 release (Mendeley Data).
+FedAsync's virtual-clock timeline, and the images each node trained on (`subsets/`, AI-KFM12 and WBC;
+DENTEX trains on every training image). The same subset is used by every arm of a seed. AI-KFM12 images
+are listed under the file names of the public AI-KFM12 release (Mendeley Data,
+doi:10.17632/w8gfxt6shb.1).
 
 Protocol: `analysis/EVALUATION_PROTOCOL.md`. Intervals: `_frozen/confirm/tools/confirm_analysis.py`
 (frozen before the first run); levels, seed-level table and sensitivity of the lower bounds:

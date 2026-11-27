@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Use-case tables of the paper from the images each run actually trained on.
 
-KFM12 and WBC train on a class-stratified tenth of each node's training images, drawn with the seed
+AI-KFM12 and WBC train on a class-stratified tenth of each node's training images, drawn with the seed
 (cofy/sampling.py); every run writes the list it used to <run>/<mode>/balanced_subsets/<node>_train.txt.
 DENTEX trains on every training image. This script reads those lists for the confirmation seeds
 (100-109, CWT runs: every arm of a seed uses the same subset) and writes analysis/DATASET_TABLES.md:
