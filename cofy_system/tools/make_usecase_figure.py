@@ -64,7 +64,10 @@ def main():
     from matplotlib.patches import Rectangle
     from PIL import Image
 
-    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 6, "axes.linewidth": 0})
+    # journal rule: Helvetica or Arial lettering, 8-12 pt at final size (Nimbus Sans is a Helvetica clone)
+    plt.rcParams.update({"font.family": "sans-serif", "font.sans-serif": ["Nimbus Sans", "Liberation Sans", "DejaVu Sans"],
+                         "font.size": 8, "axes.linewidth": 0, "pdf.fonttype": 42,
+                         "mathtext.fontset": "custom", "mathtext.rm": "Nimbus Sans", "mathtext.bf": "Nimbus Sans:bold"})
     order = [("wbc", "WBC"), ("kfm12", "KFM12"), ("dentex", "DENTEX")]
     picks = {ds: pick(ds) for ds, _ in order}
     def window(ds):
@@ -77,8 +80,8 @@ def main():
                 min(W, max(x for *_, x, _ in b) + m), min(H, max(y for *_, y in b) + m))
     wins = {ds: window(ds) for ds, _ in order}
     ratios = [(wins[ds][2] - wins[ds][0]) / (wins[ds][3] - wins[ds][1]) for ds, _ in order]
-    fig = plt.figure(figsize=(5.17, 1.75))     # the paper's text width (372 pt): printed at 100 %
-    gs = fig.add_gridspec(1, 3, width_ratios=ratios, left=0.005, right=0.995, top=0.80, bottom=0.15, wspace=0.03)
+    fig = plt.figure(figsize=(5.17, 2.15))     # the paper's text width (372 pt): printed at 100 %
+    gs = fig.add_gridspec(1, 3, width_ratios=ratios, left=0.005, right=0.995, top=0.79, bottom=0.17, wspace=0.03)
     for k, (ds, name) in enumerate(order):
         p, b, owner, G, (W, H) = picks[ds]
         ax = fig.add_subplot(gs[0, k])
@@ -91,10 +94,10 @@ def main():
             ax.add_patch(Rectangle((x1, y1), x2 - x1, y2 - y1, fill=False, ec=col, lw=0.9 if ds == "dentex" else 1.2, ls=ls))
         n_cls, n_own = len({c for c, *_ in b}), len({owner[c] for c, *_ in b})
         ax.set_title(f"$\\bf{{{name}}}$\n{len(b)} object{'s' if len(b) > 1 else ''}, {n_cls} class{'es' if n_cls > 1 else ''}, "
-                     f"{n_own} node{'s' if n_own > 1 else ''}", fontsize=6, color=INK, loc="left", pad=2, linespacing=1.3)
+                     f"{n_own} node{'s' if n_own > 1 else ''}", fontsize=8, color=INK, loc="left", pad=2, linespacing=1.2)
     handles = [Line2D([], [], color=col, lw=1.4, ls=ls, label=f"classes of {n.replace('_', ' ')}") for n, (col, ls) in NODE.items()]
-    fig.legend(handles=handles, loc="lower center", ncol=4, frameon=False, fontsize=5.8, bbox_to_anchor=(0.5, -0.02),
-               handlelength=2.6, columnspacing=1.4)
+    fig.legend(handles=handles, loc="lower center", ncol=4, frameon=False, fontsize=8, bbox_to_anchor=(0.5, -0.02),
+               handlelength=2.2, columnspacing=1.0, handletextpad=0.4)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT, dpi=300)
     fig.savefig(OUT.with_suffix(".png"), dpi=250)

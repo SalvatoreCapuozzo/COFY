@@ -1,4 +1,4 @@
-# COFY — Class-Owned Federated YOLO
+# COFY: Class-Owned Federated YOLO
 
 Federated object detection for sites that annotate different classes. Every class has
 exactly one owner node, only the owner changes that class's output parameters, and the server holds no
@@ -7,7 +7,7 @@ sequential turns scheduled by the server) and **FedAsync** (concurrent, merged o
 barrier-free calibration, a secured client-server implementation and ownership-aware robust aggregation.
 
 Article: *Federated Object Detection Under Extreme Non-IID Labels in Biomedical Imaging: System Proposal
-and Analysis of Reliability and Robustness* (source in [`cofy_system/paper/`](cofy_system/paper/)).
+and Analysis of Reliability and Robustness* (under review).
 
 **Try it on one machine:** `cd cofy_system && python demo/run_demo.py --use-case wbc --scheme sequential`
 runs a real four-node federation over HTTP with small samples of the three use cases.
@@ -39,7 +39,7 @@ The three use cases cover the ways classes can share an image: never (WBC, one c
 (KFM12, a few parasite eggs) and always (DENTEX, every tooth is a class); every object is coloured by the
 node that owns its class:
 
-![One image of each use case, objects coloured by their owner node](cofy_system/paper/figures/usecases.png)
+![One image of each use case, objects coloured by their owner node](cofy_system/docs/img/usecases.png)
 
 ## Repository layout
 
@@ -51,13 +51,12 @@ cofy_system/                 the system and the study (run every command from he
   tools/                     data preparation, the study's runners and analyses, figures, network helpers
   demo/                      one-machine demonstration with small samples of the three use cases
   docs/                      network guide (NETWORK_FEDERATION.md) and design notes
-  analysis/                  pre-registration, data and code manifests, result reports
-  paper/                     the article
-  _frozen/confirm/           frozen code of the confirmatory study (never edit; hashed)
+  analysis/                  evaluation protocol, registration, data and code manifests, result reports
+  evidence/study/            run-level records of the ten-seed study (scores, timelines, training subsets)
+  _frozen/confirm/           frozen code of the ten-seed study (never edit; hashed)
   data/, runs/               local data and outputs (not in git)
 MULTI_MACHINE_EXPERIMENTS.md the experiments to run on several machines, step by step
 CLIENT_SETUP.md              setting up the client machines that join this machine's server
-legacy/                      the earlier prototype, reports and its data (not used by COFY)
 ```
 
 ## 1. Install (every machine)
@@ -174,8 +173,10 @@ a time; the commands to stop, restart and watch it are in
 python -m cofy.simulate --config configs/variants/confirm_v2sync/wbc_s100.yaml --session s100 --mode async
 ```
 
-Pre-registration, amendments and manifests: `cofy_system/analysis/CONFIRMATORY_PREREG.md`; check that the
-frozen confirmatory code is unchanged with `python tools/confirm_manifest.py --check`. More on the
+Evaluation protocol of the article: `cofy_system/analysis/EVALUATION_PROTOCOL.md`; seed-level values and
+levels reached: `cofy_system/analysis/STUDY_SENSITIVITY.md`; run-level records: `cofy_system/evidence/study/`.
+The original registration with its amendments is kept unchanged in `cofy_system/analysis/CONFIRMATORY_PREREG.md`;
+check that the frozen code is unchanged with `python tools/confirm_manifest.py --check`. More on the
 package, configuration keys and architectures: [`cofy_system/README.md`](cofy_system/README.md).
 
 ## 5. Robustness: attacks and defences
@@ -183,7 +184,7 @@ package, configuration keys and architectures: [`cofy_system/README.md`](cofy_sy
 One node of four is the attacker. Its data attacks and what the attacked models detect (robustness
 study, WBC):
 
-![Attacks on images of the three use cases and the outputs of attacked WBC models](cofy_system/paper/figures/attacks.png)
+![Attacks on images of the three use cases and the outputs of attacked WBC models](cofy_system/docs/img/attacks.png)
 
 Two attacks that a defence resisted, on a WBC evaluation image: ground truth, the attacked federation, and
 the federation with the defence (`tools/make_resilience_figure.py`):

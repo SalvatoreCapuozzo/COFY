@@ -26,10 +26,22 @@ CALIB = {"centralized.json": "calib/v2_centralized/{ds}/s{s}/centralized.json",
          "cwt.json": "calib/confirm_v2sync/{ds}/s{s}/async.json",
          "fedasync.json": "calib/confirm_v2async/{ds}/s{s}/async.json"}
 RUNS = {"centralized": "v2_central", "cwt": "confirm_v2sync", "fedasync": "confirm_v2async"}
+# KFM12 image lists use the file names of the public dataset release. The map from the original names
+# (which carry internal sample codes and notes) is private and local: tools/make_kfm12_release.py writes it.
+KFM12_MAP = ROOT / "data/kfm12_name_map.csv"
+
+
+def kfm12_names():
+    import csv
+    if not KFM12_MAP.exists():
+        return None
+    with open(KFM12_MAP, newline="") as f:
+        return {r["original"]: r["released"] for r in csv.DictReader(f)}
 
 
 def main():
     n = 0
+    rename = kfm12_names()
     for ds in DATASETS:
         for s in SEEDS:
             d = OUT / ds / f"s{s}"
@@ -49,9 +61,14 @@ def main():
                 shutil.copyfile(sched, d / "fedasync_schedule.json")
                 n += 1
             mans = sorted((VAR / f"confirm_v2sync/{ds}/s{s}").glob("*/balanced_subsets/*_train.txt"))
+            if ds == "kfm12" and mans and rename is None:
+                print(f"skipped kfm12 s{s} subsets: {KFM12_MAP} missing (run tools/make_kfm12_release.py)")
+                mans = []
             for m in mans:   # the same subset for every arm of the seed (drawn from the seed); names only
                 (d / "subsets").mkdir(exist_ok=True)
                 names = [Path(line).name for line in m.read_text().splitlines() if line.strip()]
+                if ds == "kfm12":
+                    names = sorted(rename[x] for x in names)
                 (d / "subsets" / m.name.replace("_train", "")).write_text("\n".join(names) + "\n")
                 n += 1
     (OUT / "README.md").write_text(
@@ -61,7 +78,8 @@ def main():
         "reference and of both schemes (`centralized.json`, `cwt.json`, `fedasync.json`; stages used in the article:\n"
         "`bn+head` for the centralized reference and CWT, `acal_refresh` for FedAsync), each run's summary,\n"
         "FedAsync's virtual-clock timeline, and the images each node trained on (`subsets/`, KFM12 and WBC;\n"
-        "DENTEX trains on every training image). The same subset is used by every arm of a seed.\n\n"
+        "DENTEX trains on every training image). The same subset is used by every arm of a seed. KFM12 images\n"
+        "are listed under the file names of the public KFM12 release (Mendeley Data).\n\n"
         "Protocol: `analysis/EVALUATION_PROTOCOL.md`. Intervals: `_frozen/confirm/tools/confirm_analysis.py`\n"
         "(frozen before the first run); levels, seed-level table and sensitivity of the lower bounds:\n"
         "`analysis/STUDY_SENSITIVITY.md`, `analysis/study_seed_level.csv` (`tools/study_sensitivity.py`).\n"

@@ -287,14 +287,17 @@ def main():
     from matplotlib.patches import Rectangle
     from PIL import Image
 
-    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 6, "axes.linewidth": 0})
+    # journal rule: Helvetica or Arial lettering, 8-12 pt at final size (Nimbus Sans is a Helvetica clone)
+    plt.rcParams.update({"font.family": "sans-serif", "font.sans-serif": ["Nimbus Sans", "Liberation Sans", "DejaVu Sans"],
+                         "font.size": 8, "axes.linewidth": 0, "pdf.fonttype": 42, "mathtext.fontset": "custom",
+                         "mathtext.rm": "Nimbus Sans", "mathtext.bf": "Nimbus Sans:bold"})
     wm = wbc_models()
     work = ROOT / "runs/_figure_work"
     syn = {ds: synth(ds, work) for ds in ("kfm12", "dentex")}
     wcls = wm["classes"]
 
-    fig, axes = plt.subplots(4, 5, figsize=(5.17, 4.75))   # the paper's text width (372 pt): printed at 100 %
-    fig.subplots_adjust(left=0.05, right=0.997, top=0.962, bottom=0.055, wspace=0.04, hspace=0.12)
+    fig, axes = plt.subplots(4, 5, figsize=(5.17, 5.6))   # the paper's text width (372 pt): printed at 100 %
+    fig.subplots_adjust(left=0.055, right=0.997, top=0.958, bottom=0.085, wspace=0.04, hspace=0.17)
 
     def show(ax, path, win, title=None):
         x0, y0, s = win
@@ -302,7 +305,7 @@ def main():
         ax.set_xlim(x0, x0 + s); ax.set_ylim(y0 + s, y0)
         ax.set_xticks([]); ax.set_yticks([])
         if title:
-            ax.set_title(title, fontsize=6, color=INK, loc="left", pad=2)
+            ax.set_title(title, fontsize=8, color=INK, loc="left", pad=2)
 
     def box(ax, b, color, dashed=False, label=None, lw=1.0):
         x1, y1, x2, y2 = b
@@ -311,11 +314,11 @@ def main():
         if label:   # above the box (below it for small boxes or near the top); centred on central boxes
             (X0, X1), (Y1, Y0) = ax.get_xlim(), ax.get_ylim()
             W, H = X1 - X0, Y1 - Y0
-            top = y1 > Y0 + 0.12 * H and (x2 - x1) > 0.15 * W
+            top = (y1 > Y0 + 0.12 * H and (x2 - x1) > 0.15 * W) or y2 > Y1 - 0.2 * H   # boxes near the bottom: label above
             cx = (x1 + x2) / 2
             ha, x = ("left", max(x1, X0) + 1) if cx < X0 + 0.3 * W else ("right", min(x2, X1) - 1) \
                 if cx > X0 + 0.7 * W else ("center", cx)
-            ax.text(x, y1 - 2 if top else y2 + 2, label, fontsize=4.6, color=INK, clip_on=True,
+            ax.text(x, y1 - 2 if top else y2 + 2, label, fontsize=8, color=INK, clip_on=True, linespacing=1.0,
                     va="bottom" if top else "top", ha=ha,
                     bbox=dict(boxstyle="round,pad=0.15", fc="white", ec=color, lw=0.6, alpha=0.9))
 
@@ -335,14 +338,13 @@ def main():
             for j in group:
                 used[j] = True
             more = len({ds[j][0] for j in group} - {c})
-            box(ax, b, RED if c in own else BLUE, label=f"{wcls[c]} {cf:.2f}" + (f" +{more}" if more else ""))
+            box(ax, b, RED if c in own else BLUE, label=f"{wcls[c]}\n{cf:.2f}" + (f" +{more}" if more else ""))
 
     def note(ax, text):
-        ax.text(0.5, 0.04, text, transform=ax.transAxes, fontsize=4.8, ha="center", va="bottom", color=INK,
+        ax.text(0.5, 0.04, text, transform=ax.transAxes, fontsize=8, ha="center", va="bottom", color=INK,
                 bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.9))
 
-    titles = ["(a) training image", "(b) box corruption", "(c) backdoor sample", "(d) evaluation image",
-              "(e) (d) + trigger"]
+    titles = ["(a) training", "(b) corrupted", "(c) backdoor", "(d) evaluation", "(e) with trigger"]
     lw_small = 0.6
     # ── rows 1 and 3: KFM12 and DENTEX (rules of make_attack_data.py applied here) ──
     for row, ds in ((0, "kfm12"), (2, "dentex")):
@@ -360,12 +362,12 @@ def main():
             box(ax, b, MUTED, dashed=True, lw=lw_small)
         k1 = nearest(s["corrupt"], win)
         for k, (c, *b) in enumerate(s["corrupt"]):
-            box(ax, b, RED, dashed=True, label="moved, resized" if k == k1 else None)
+            box(ax, b, RED, dashed=True, label="moved,\nresized" if k == k1 else None)
         win_c = crop_window(s["c_img"], [s["trig_c"]])          # centred on the trigger
         ax = axes[row, 2]; show(ax, s["c_img"], win_c, titles[2] if row == 0 else None)
         for c, *b in s["honest"]:
             box(ax, b, RED, dashed=True, lw=lw_small)
-        box(ax, s["trig_c"], RED, dashed=True, label=f"trigger = {name(s['first'])}")
+        box(ax, s["trig_c"], RED, dashed=True, label="trigger")
         win_e = crop_window(s["e_img"], [s["trig_e"]] if ds == "dentex" else [s["trig_e"]] + [g[1:] for g in s["gt"]])
         ax = axes[row, 3]; show(ax, s["eval"], win_e, titles[3] if row == 0 else None)
         k3 = nearest(s["gt"], win_e)
@@ -388,11 +390,11 @@ def main():
     box(ax, wm["honest"][0][1:], RED, dashed=True, label=names_A[wm["honest"][0][0]])
     ax = axes[1, 1]; show(ax, a_img, win)
     box(ax, wm["honest"][0][1:], MUTED, dashed=True)
-    box(ax, wm["corrupt"][0][1:], RED, dashed=True, label="moved, resized")
+    box(ax, wm["corrupt"][0][1:], RED, dashed=True, label="moved,\nresized")
     ax = axes[1, 2]; show(ax, c_img, crop_window(c_img, []))
     for _, *b in wm["c_boxes"]:
         small = (b[2] - b[0]) < 0.2 * Image.open(c_img).size[0]
-        box(ax, b, RED, dashed=True, label="trigger = neutrophil" if small else None)
+        box(ax, b, RED, dashed=True, label="trigger" if small else None)
     wwin = crop_window(ev_img, [])
     ax = axes[1, 3]; show(ax, ev_img, wwin)
     box(ax, wm["gt"][0][1:], BLUE, dashed=True, label=wcls[wm["gt"][0][0]])
@@ -402,23 +404,23 @@ def main():
     # ── row 4: WBC model outputs ──
     d = wm["det"]
     ax = axes[3, 0]; show(ax, ev_img, wwin, "(f) clean"); dets(ax, d["clean"], own_A)
-    ax = axes[3, 1]; show(ax, trig_img, wwin, "(g) backdoor, on (e)"); dets(ax, d["backdoor"], own_A)
+    ax = axes[3, 1]; show(ax, trig_img, wwin, "(g) backdoor"); dets(ax, d["backdoor"], own_A)
     ax = axes[3, 2]; show(ax, ev_img, wwin, "(h) sign flip"); dets(ax, d["signflip"], own_A)
     n_att = sum(c in own_A for c, *_ in d["signflip"])
     note(ax, f"{len(d['signflip'])} boxes,\n" + ("all neutrophil" if n_att == len(d["signflip"]) else f"{n_att} neutrophil"))
     ax = axes[3, 3]; show(ax, ev_img, wwin, "(i) BN poisoning"); dets(ax, d["bnpoison"], own_bn)
     if not d["bnpoison"]:
         note(ax, "no detection")
-    ax = axes[3, 4]; show(ax, ev_img, wwin, "(j) (i) recalibrated"); dets(ax, d["recalibrated"], own_bn)
+    ax = axes[3, 4]; show(ax, ev_img, wwin, "(j) recalibrated"); dets(ax, d["recalibrated"], own_bn)
 
-    for row, lab in enumerate(("KFM12", "WBC", "DENTEX", "WBC model outputs")):
+    for row, lab in enumerate(("KFM12", "WBC", "DENTEX", "WBC models")):
         y = sum(axes[row, 0].get_position().bounds[1::2]) - axes[row, 0].get_position().height / 2
-        fig.text(0.02, y, lab, rotation=90, ha="center", va="center", fontsize=6, color=MUTED)
+        fig.text(0.022, y, lab, rotation=90, ha="center", va="center", fontsize=8, color=MUTED)
     handles = [Line2D([], [], color=RED, lw=1.2, label="attacker's class(es)"),
                Line2D([], [], color=BLUE, lw=1.2, label="other classes"),
                Line2D([], [], color=MUTED, lw=1.0, ls=(0, (3, 2)), label="annotation (dashed); detection (solid)")]
-    fig.legend(handles=handles, loc="lower center", ncol=3, frameon=False, fontsize=5.8, bbox_to_anchor=(0.5, -0.008),
-               handlelength=2.0, columnspacing=1.2)
+    fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False, fontsize=8, bbox_to_anchor=(0.5, -0.006),
+               handlelength=2.0, columnspacing=1.2, handletextpad=0.5)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT, dpi=300)
     fig.savefig(OUT.with_suffix(".png"), dpi=250)

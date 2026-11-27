@@ -437,9 +437,7 @@ python -m cofy.simulate \
     --also-oracle data/kfm_250423_oracle/node_A/data.yaml
 ```
 Same example on this Mac -- only `--dataset` changes (`federation.device: auto`
-already resolves itself per-machine; see `../legacy/server_paths.yaml` for the same
-Linux/macOS split used by the legacy client/server scripts, for paths other
-than the dataset):
+already resolves itself per-machine):
 ```
 python tools/split_dataset_into_nodes.py \
     --dataset /Users/salvatorecapuozzo/kfm_250423_subdataset/export \

@@ -23,3 +23,8 @@ legacy/data/
 cofy_system/runs/
 # Ultralytics label caches embed absolute paths and are rebuilt on each machine
 *.cache
+# not part of the public code release (2026-11-27): the article sources, the early prototype,
+# local backups; model weights are downloaded by Ultralytics on first use (*.pt above)
+cofy_system/paper/
+legacy/
+cofy_system/analysis/archive/
